@@ -1,6 +1,7 @@
-# Proposed System Design
+# CP1: Interaction Design Sketch
 
-D1. Information Representation
+## D1. Information Representation
+
 | ID | Design Specification |
 |---|---|
 | D1‑1 | Let `Info` represent any program, document, image, or video stored in Benchling, Google Drive, or NAS. Assume that `M` is a precise and concise representation of any `Info`, with each `Info` corresponding to exactly one `M`. |
@@ -8,7 +9,8 @@ D1. Information Representation
 | D1‑3 | `M` can be converted into human-readable Markdown. When appropriate, the Markdown output includes links to the original `Info` associated with `M`. |
 | D1‑4 | `M` may contain metadata such as information owners, research projects, and other attributes, organized using tags or groups. |
 
-D2. Input — Encoder System
+## D2. Input — Encoder System
+
 | ID | Design Specification |
 |---|---|
 | D2‑1 | Assume that the Encoder System can access any laboratory-related `Info` stored in Benchling, Google Drive, or NAS, including its last modification timestamp. |
@@ -16,7 +18,8 @@ D2. Input — Encoder System
 | D2‑3 | If the Encoder System determines that an `Info` item is difficult to convert into `M`, it notifies the information owner and requests additional explanations. |
 | D2‑4 | The Encoder System should make recording `Info` as simple and convenient as possible, minimizing documentation overhead to avoid discouraging information collection. |
 
-D3. Output — Decoder System
+## D3. Output — Decoder System
+
 | ID | Design Specification |
 |---|---|
 | D3‑1 | The Decoder System attempts to answer any user query as accurately as possible using the `M` database. |
