@@ -43,9 +43,9 @@ Per member:
 
 | Member | GitHub | Channel | Check-in frequency | Expected response time |
 |---|---|---|---|---|
-| Darius Lung (code steward) | @dariuslung | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
-| Benedict Davon Martono | @benedictdavon | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
+| Darius Lung (龍偉亮) | @dariuslung | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
+| Benedict Davon Martono (周恭麟) | @benedictdavon | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
 | 李原誌 | @runnywolf | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
-| 杜洺鋒 | @SAStommy | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
+| Tommy To (杜洺鋒) | @SAStommy | LINE, GitHub | Daily | Within 24 hours (6 hours within 48 hours of a deadline) |
 
 If someone misses two response windows in a row without notice, the code steward checks in with them directly, and the topic is raised in the group chat.
