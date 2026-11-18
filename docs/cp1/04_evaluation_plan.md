@@ -85,5 +85,5 @@ The tool uses AI. As described in 03, the `encoder` and `decoder` are local lang
 
 **Not decided yet, and when we will decide**
 
-* **Which local model, and whether it is good enough:** Our only confirmed hardware is one team member's lab machine with an 8 GB GPU. We will test extraction and answering on sample records during the build phase and decide before CP2 (Week 12). If a local model is not accurate enough, we will revisit the design and record the change in `DECISIONS.md`.
+* **Which local model, and whether it is good enough:** Our only confirmed hardware is one team member's lab machine with an 8 GB GPU. We will test extraction and answering on sample records during the build phase and decide before CP2 (Week 12). If a local model is not accurate enough, we will revisit the design and record the change in `docs/DECISIONS.md`.
 * **The rule for "enough to answer" (03, D3‑1 / D3‑2):** This is still an open question in 03. We will set it during the build phase and check it in the safety criterion above.
