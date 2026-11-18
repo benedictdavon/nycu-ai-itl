@@ -12,8 +12,8 @@ A "significant choice" is anything that affects more than one person's work: sco
 1. **Who decides.** The owner of the PR or task (the person whose name is in "Led by" in the PR template) decides. Others give opinions and reasons, but the owner has the final say. This matches our AI usage guidelines, section 3.
 2. **Discuss first.** Disagreement is raised on the PR (GitHub) or in LINE, with a reason and, if possible, an alternative.
 3. **If a reviewer still disagrees**, any member can call a short meeting (call or in person) within 3 days. Each person states their position once, then the owner decides.
-4. **If the owner cannot decide** (for example, they are stuck between options or the dispute is about the owner's own work), the current code steward (recorded in `.github/DECISIONS.md`) decides.
-5. **Record it.** Every significant decision gets an entry in `.github/DECISIONS.md` with what was chosen, why, the alternative rejected, and who led it. The PR review states how it was resolved: guideline compliance, consensus after discussion, or the owner was persuaded by [member] because [reason].
+4. **If the owner cannot decide** (for example, they are stuck between options or the dispute is about the owner's own work), the current code steward (recorded in `docs/DECISIONS.md`) decides.
+5. **Record it.** Every significant decision gets an entry in `docs/DECISIONS.md` with what was chosen, why, the alternative rejected, and who led it. The PR review states how it was resolved: guideline compliance, consensus after discussion, or the owner was persuaded by [member] because [reason].
 
 ## 2. Definition of done
 
@@ -23,9 +23,9 @@ A piece of work (code, document or experiment-design task) is done only when all
 - [ ] It is in a PR that uses the PR template, with the "Decision" section filled in if a significant choice was made.
 - [ ] At least one team member other than the author has reviewed it, and their review comment says how any disagreement was resolved.
 - [ ] Code is tested (tests pass, or a short manual test note is in the PR), and documents are proofread and link to their sources or evidence.
-- [ ] Any use of AI that produced code, text or decisions in the repo is logged as described in `AI_USAGE_GUIDELINES.md`, and a human has checked the output.
+- [ ] Any use of AI that produced code, text or decisions in the repo is logged as described in `docs/AI_USAGE_GUIDELINES.md`, and a human has checked the output.
 - [ ] It is merged into `main` through the PR (no direct pushes). Only the code steward merges. When the steward is the author, another member approves the PR and the steward merges it.
-- [ ] `.github/DECISIONS.md` is updated if a significant choice was made, and related docs under `docs/` are updated if the change affects them.
+- [ ] `docs/DECISIONS.md` is updated if a significant choice was made, and related docs under `docs/` are updated if the change affects them.
 
 Work that fails any item is "in progress", not done, and is not reported as finished at team meetings.
 
