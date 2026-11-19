@@ -37,13 +37,13 @@ def _format_record(record: Record) -> str:
     if record.based_on:
         lines.append(f"Based on: {record.based_on}")
     lines.append(f"Contributors: {', '.join(record.contributors)}")
-    for change in record.changes:
-        reason = f" (reason: {change.reason})" if change.reason else ""
-        lines.append(f"Change: {change.what}{reason}")
     if record.troubleshooting:
-        lines.append(f"Troubleshooting: {record.troubleshooting}")
+        lines.append(f"Problem and fix: {record.troubleshooting}")
+    for change in record.changes:
+        reason = f" (why: {change.reason})" if change.reason else ""
+        lines.append(f"Changed from the base protocol: {change.what}{reason}")
     for gap in record.gaps:
-        lines.append(f"Gap: {gap}")
+        lines.append(f"Not recorded: {gap}")
     return "\n".join(lines)
 
 
