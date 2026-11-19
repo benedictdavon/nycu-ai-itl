@@ -13,3 +13,9 @@
 **What:** Project docs live in `docs/` (including `DECISIONS.md`, `AI_USAGE_GUIDELINES.md`, `CONTRIBUTORS.md`). The root keeps only `README.md` (all caps), and `.github/` keeps only GitHub tooling files such as the PR template.
 **Why:** Keeps the repo root tidy and gives each doc one canonical location. We rejected keeping `DECISIONS.md` in `.github/`, because GitHub gives it no special treatment there, and at the root, because it clutters the top level.
 **Led by:** Darius Lung
+
+## 2026-11-19 — When the decoder says "not enough"
+**What:** An answer is `insufficient` when search returns no hits (no model call), when the model finds the hits do not answer the question, or when no cited record survives the citation check. A partial answer, or one from a record about a different case, is `answered` with the gaps in `uncertainties`. The rule is in `architecture.md` §4.
+**Why:** Answers 03's open question with rules that code can enforce where possible: no hits and no valid citation are checked in code, so a model that ignores the prompt still cannot answer without a source. Partial answers stay useful to the requester, with what is missing said plainly.
+**Alternative rejected:** A search score threshold decided by Part C (the score belongs to Part A's search, which is not built yet); `insufficient` for any partial answer (hides useful records).
+**Led by:** Darius Lung

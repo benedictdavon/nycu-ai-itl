@@ -173,7 +173,7 @@ Full request and response shapes and error codes: [api.md](api.md).
 | Model server at the demo | The demo laptop (Benedict's) runs the app and reaches the model server over Tailscale. | If the room's network blocks Tailscale or the server is down, run a small model locally on the demo laptop (RTX 3070 Ti 8 GB) with Ollama. Test this fallback before Nov 23. |
 | Language | Test records, prompts and the UI are in English. | — |
 | Retrieval | SQLite FTS5 keyword search over the text of confirmed `M`, with the `porter` tokenizer so "transform" also matches "transformation". | If tests miss paraphrased questions, add embeddings from an Ollama embedding model. |
-| "Enough to answer" rule (open in 03) | `insufficient` if search returns nothing relevant, or the model says the records do not answer the question, or no citation passes the check. | Part C adjusts it and records the rule. |
+| "Enough to answer" rule (open in 03) | Decided (Part C). The answer is `insufficient` when (1) search returns no hits, and then the model is not called; (2) the model finds that the hits do not answer the question (decoder prompt rule 7); or (3) the model answers but no cited record survives the citation check. If the records answer only part of the question, or are about a different case (another construct, insert or kit), the answer is `answered` and lists the rest in `uncertainties`. Search decides what counts as a hit; whether a hit is relevant is the model's call. | If tests show the model answering from unrelated hits, add a search score threshold (Part A) or a stricter prompt rule. |
 | Two people at once | Both use the laptop's address over the local network, each with a different name. | Campus Wi-Fi may block this. Fallback: two browser windows on the demo laptop. |
 
 ## 5. Tests
@@ -240,7 +240,7 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 
 **C: decoder** (`app/decoder/`, `app/api/ask.py`, `app/llm.py`)
 - [ ] PR 0: `llm.py` talks to `llama-server`'s OpenAI-compatible `/v1/chat/completions` (JSON schema via `response_format`), with settings for the server address and API key in `config.py` and `.env.example`. The tests still pass with `LLM_BACKEND=fake`, and a local Ollama still works. The model server setup is in `backend/README.md`.
-- [ ] PR 1: a decoder prompt file exists, and `answer()` calls `llm.chat_json`. It cites only records from the hits and names their contributors. The citation check runs in code. Hint mode gives hints, not full steps (D3-1a). The "not enough" rule is written down (§4).
+- [x] PR 1: a decoder prompt file exists, and `answer()` calls `llm.chat_json`. It cites only records from the hits and names their contributors. The citation check runs in code. Hint mode gives hints, not full steps (D3-1a). The "not enough" rule is written down (§4).
 - [ ] PR 2: `POST /api/discussions` saves a resolved discussion as a draft for the contributor, with no follow-up questions.
 - [ ] At least 5 decoder cases are in the prompt suite, including no relevant record, hint mode, and a question only a saved discussion answers. At least one documented fail-then-fix cycle (CP2 item 6). The decoder part of the prompt card is written.
 
