@@ -28,10 +28,10 @@ Host side (Darius's shared GPU; keep it small, and pin one GPU):
 CUDA_VISIBLE_DEVICES=1 llama-server \
   -hf Qwen/Qwen3-4B-GGUF:Q8_0 \
   --jinja -ngl 99 -c 8192 -np 2 \
-  --host <tailscale-ip> --port 8080 --api-key "$LLM_API_KEY"
+  --host <tailscale-ip> --port 8080 --api-key-file ~/.config/labknow/llm_api_key
 ```
 
-`--jinja` is needed so the app can switch Qwen3 thinking off. `-c 8192 -np 2` means two parallel requests with 4096 tokens each. Use `--host 127.0.0.1` when running locally, never `0.0.0.0`.
+Make the key file once with `mkdir -p ~/.config/labknow && (umask 077; openssl rand -hex 16 > ~/.config/labknow/llm_api_key)`. Use `--api-key-file`, not `--api-key`: on a shared machine, every user can read command-line arguments with `ps`. `--jinja` is needed so the app can switch Qwen3 thinking off. `-c 8192 -np 2` means two parallel requests with 4096 tokens each. Use `--host 127.0.0.1` when running locally, never `0.0.0.0`.
 
 App side, in `.env`:
 
