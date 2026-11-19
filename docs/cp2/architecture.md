@@ -186,10 +186,10 @@ Full request and response shapes and error codes: [api.md](api.md).
 | Part | Owner | Also writes for CP2 |
 |---|---|---|
 | Scaffold (§2, end-to-end with stubs) | Benedict | This file; `DECISIONS.md` entries for the stack; demo laptop |
-| A: storage and retrieval | **TBD** | Merge plan entry in `DECISIONS.md` (CP2 item 10) |
-| B: ingest and encoder | **TBD** | Encoder part of the prompt card and test suite |
-| C: decoder | **TBD** | Decoder part of the prompt card and test suite |
-| D: frontend | **TBD** | Design rationale (CP2 item 2) |
+| A: storage and retrieval | Tommy | Merge plan entry in `DECISIONS.md` (CP2 item 10) |
+| B: ingest and encoder | 李原誌 | Encoder part of the prompt card and test suite |
+| C: decoder | Darius | Decoder part of the prompt card and test suite; hosts the model server |
+| D: frontend | Benedict | Design rationale (CP2 item 2) |
 
 Shared: interim evaluation report, updated AI usage guidelines, two user testing sessions.
 
@@ -255,5 +255,4 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 
 ## 7. Open questions for the team
 
-1. Who owns Parts A–D? Does the UI owner know React? If not, we switch to server-rendered pages.
-2. Who books the two user testing sessions, and with whom?
+1. Who books the two user testing sessions, and with whom?
