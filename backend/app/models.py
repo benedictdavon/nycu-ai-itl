@@ -111,5 +111,5 @@ class DiscussionCreate(BaseModel):
 
 class Health(BaseModel):
     status: Literal["ok"]
-    llm_backend: Literal["fake", "ollama"]
+    llm_backend: Literal["fake", "llama_server"]
     llm_model: str

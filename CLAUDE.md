@@ -22,7 +22,7 @@ uv run ruff check . && uv run ruff format --check .
 uv run pytest -q                                   # fake LLM, no network
 ```
 
-Settings come from environment variables or a repo-root `.env` (see `.env.example`). The default `LLM_BACKEND=fake` needs no Ollama.
+Settings come from environment variables or a repo-root `.env` (see `.env.example`). The default `LLM_BACKEND=fake` needs no model server.
 
 ## Layout and ownership
 
@@ -49,7 +49,7 @@ Personal preferences (how much to discuss before editing, reply style, and so on
 
 ## Rules for code
 
-- **Records go to no outside AI service** (04 §5). The LLM is a model server the team hosts itself (planned: `llama-server` on Darius's GPU, over Tailscale; a local Ollama as fallback), called only through `app/llm.py`. Never add a third-party LLM API or any other call that sends record text elsewhere. Never commit the server's address or API key; they go in `.env`.
+- **Records go to no outside AI service** (04 §5). The LLM is a model server the team hosts itself (planned: `llama-server` on Darius's GPU, over Tailscale, with a small local `llama-server` as the fallback), called only through `app/llm.py`. Never add a third-party LLM API or any other call that sends record text elsewhere. Never commit the server's address or API key; they go in `.env`.
 - **No real lab data in the repo.** Test data is made up and in English. `data/` (the database and uploads) is git-ignored; never commit it.
 - **Only confirmed records are searchable**, and an answer may cite only records that search returned. The contributor confirms every `M` before it is stored as confirmed.
 - **Guards go in code, not only in prompts:** at most two follow-up questions (Part B) and the citation check (Part C).
