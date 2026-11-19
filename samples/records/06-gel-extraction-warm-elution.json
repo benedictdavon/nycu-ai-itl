@@ -1,0 +1,20 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Bea Lin",
+    "title": "Gel extraction of a 3 kb fragment",
+    "link": "https://example.com/benchling/gel-extraction-3kb",
+    "project_tags": []
+  },
+  "record": {
+    "procedure": "Gel extraction of a 3 kb fragment",
+    "based_on": "Kit protocol",
+    "contributors": ["Bea Lin"],
+    "project_tags": [],
+    "changes": [
+      {"what": "Elution with 50 C water instead of room-temperature buffer", "reason": "low recovery"}
+    ],
+    "troubleshooting": "Recovery about 40 percent with room-temperature buffer. Warm water elution raised it to about 70 percent.",
+    "gaps": []
+  }
+}

@@ -1,0 +1,1 @@
+Plasmid miniprep from a 5 mL overnight culture, following the kit manual. Yield was low, about 20 ng per microliter, and the DNA gave a weak band on the gel. The fix was a longer lysis step: 5 minutes instead of 2. Yield then rose to about 80 ng per microliter. Everything else followed the kit manual.

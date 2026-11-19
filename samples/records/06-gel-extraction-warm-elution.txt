@@ -1,0 +1,1 @@
+Gel extraction of a 3 kb fragment, following the kit protocol. Recovery was low, about 40 percent, when I eluted with room-temperature buffer. Eluting with 30 microliters of water warmed to 50 C, incubated for 5 minutes, raised recovery to about 70 percent. The rest followed the kit protocol.

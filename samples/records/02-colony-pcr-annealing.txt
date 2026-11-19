@@ -1,0 +1,1 @@
+Colony PCR on the new construct with primer pair Q, based on the standard colony PCR protocol (annealing at 55 C). The run at 55 C gave several bands, including a non-specific one below the expected size. Raised the annealing temperature to 62 C. Result: one clean band at the expected size. Nothing else in the protocol was changed.

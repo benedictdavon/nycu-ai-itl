@@ -1,0 +1,20 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Bea Lin",
+    "title": "Colony PCR on the new construct with primer pair Q",
+    "link": "https://example.com/benchling/colony-pcr-primer-q",
+    "project_tags": ["Project Y"]
+  },
+  "record": {
+    "procedure": "Colony PCR on the new construct with primer pair Q",
+    "based_on": "Standard colony PCR protocol (annealing at 55 C)",
+    "contributors": ["Bea Lin"],
+    "project_tags": ["Project Y"],
+    "changes": [
+      {"what": "Annealing temperature raised from 55 C to 62 C", "reason": "non-specific bands at 55 C"}
+    ],
+    "troubleshooting": "Several bands at 55 C, including a non-specific one. Fixed by raising the annealing temperature to 62 C.",
+    "gaps": []
+  }
+}
