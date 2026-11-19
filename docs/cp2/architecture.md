@@ -195,9 +195,19 @@ Shared: interim evaluation report, updated AI usage guidelines, two user testing
 
 Every member needs at least two merged PRs with substantive code by CP2, so each part is split into at least two PRs (the lists below suggest where).
 
+**Code steward rotation.** Every member needs one code-steward turn by CP2, and Darius has had his. The steward rotates on Nov 20, 21 and 22, one day each for the three other members; each turn is recorded in `docs/DECISIONS.md` before it starts. The steward of the day merges the PRs that are approved that day. When the steward is the author, another member approves and the steward merges (charter §2).
+
+| Day | Code steward |
+|---|---|
+| Until Thu Nov 19 | Darius |
+| Fri Nov 20 | **TBD** |
+| Sat Nov 21 (merge day) | **TBD** |
+| Sun Nov 22 | **TBD** |
+
 | When | What |
 |---|---|
 | Wed Nov 18 | This file reviewed. Owners chosen. |
+| Fri Nov 20 – Sun Nov 22 | Code steward rotates daily (see above). |
 | Thu Nov 19 | Scaffold PR merged: the thin path runs with the fake LLM. |
 | Thu Nov 19 – Sat Nov 21 | Parts A–D in parallel, at least two PRs each, reviewed by someone other than the author. |
 | Thu Nov 19 | Model tested on the demo laptop. |
@@ -238,6 +248,7 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 - [ ] The design rationale is written (CP2 item 2).
 
 **Shared:**
+- [ ] Each member has had one code-steward turn (Nov 20, 21, 22), recorded in `docs/DECISIONS.md`, and has given at least two substantive approvals or review comments.
 - [ ] A model is chosen on the demo laptop (latency, valid JSON, invented numbers) and recorded in `DECISIONS.md` (04 §5).
 - [ ] The prompt suite has a runner and at least 10 cases, and is run against that model, with the results kept.
 - [ ] Two user testing sessions are done, and the interim evaluation report and the AI usage guidelines are updated.
