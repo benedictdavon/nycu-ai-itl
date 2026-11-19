@@ -13,3 +13,6 @@ __pycache__/
 node_modules/
 frontend/dist/
 
+
+# Personal Claude Code instructions
+CLAUDE.local.md

@@ -38,6 +38,15 @@ Settings come from environment variables or a repo-root `.env` (see `.env.exampl
 
 Work only inside the part you were asked to work on. If a change needs another part's files or `models.py`, stop and say so instead of editing them.
 
+## How to work
+
+- **Do only what the task asks.** Do not add features, options or abstractions it does not need. If you see a worthwhile extra, suggest it instead of building it. Prefer the simplest change, and before you finish, re-read your diff and remove what is not needed.
+- **Do not guess.** Before you write that the code does or does not do something (in a reply, a doc or a PR), check the code and cite `file:line`. If you are not sure, say so or ask.
+- Read the files you will change, and their tests, before you edit them.
+- **Before you say a task is done**, run `ruff` and `pytest` (see Commands). Report a failure as a failure, with its output.
+
+Personal preferences (how much to discuss before editing, reply style, and so on) go in your own `~/.claude/CLAUDE.md` or a git-ignored `CLAUDE.local.md`, not in this file.
+
 ## Rules for code
 
 - **Records never leave the machine.** The LLM is a local Ollama model, called only through `app/llm.py`. Never add a hosted LLM API or any other network call that sends record text out (04 §5).
