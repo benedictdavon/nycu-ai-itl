@@ -16,7 +16,7 @@ uv run uvicorn app.main:app --reload --port 8000
 
 Open <http://127.0.0.1:8000/docs> to try the routes: `POST /api/infos`, then `POST /api/records/{id}/confirm`, then `POST /api/ask` with a word from the title.
 
-Settings come from environment variables or a `.env` file in the **repo root** (copy [`.env.example`](../.env.example)). The database goes to `data/` (git-ignored). With the default `LLM_BACKEND=fake`, nothing needs Ollama. To use a real model, install [Ollama](https://ollama.com/), `ollama pull <model>`, and set `LLM_BACKEND=ollama` and `LLM_MODEL=<model>` in `.env`.
+Settings come from environment variables or a `.env` file in the **repo root** (copy [`.env.example`](../.env.example)). The database goes to `data/` (git-ignored). With the default `LLM_BACKEND=fake`, nothing needs Ollama. To use a real model today, install [Ollama](https://ollama.com/), `ollama pull <model>`, and set `LLM_BACKEND=ollama` and `LLM_MODEL=<model>` in `.env`. The team's model server will be `llama-server` on Darius's GPU over Tailscale; Part C switches the client to it ([architecture.md §6](../docs/cp2/architecture.md#6-owners-and-plan)).
 
 ## Tests
 
