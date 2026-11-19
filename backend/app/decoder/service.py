@@ -1,9 +1,14 @@
 """Decoder: answer a question from search hits, or say what is missing (D3-1, D3-1a, D3-2).
 
-Stub until Part C: no LLM call. It names the best hit and cites it.
+Asks the model, then runs the citation check in code.
 """
 
-from app.models import Answer, Hit
+from pathlib import Path
+
+from app.llm import chat_json
+from app.models import Answer, Hit, Record
+
+PROMPTS = Path(__file__).parent / "prompts"
 
 NOT_CITED = "The records do not give a source for this answer."
 
@@ -27,18 +32,32 @@ def check_citations(draft: Answer, hits: list[Hit]) -> Answer:
     return draft.model_copy(update={"cited_record_ids": cited, "contributors": contributors})
 
 
+def _format_record(record: Record) -> str:
+    lines = [f"[id {record.id}] Procedure: {record.procedure}"]
+    if record.based_on:
+        lines.append(f"Based on: {record.based_on}")
+    lines.append(f"Contributors: {', '.join(record.contributors)}")
+    for change in record.changes:
+        reason = f" (reason: {change.reason})" if change.reason else ""
+        lines.append(f"Change: {change.what}{reason}")
+    if record.troubleshooting:
+        lines.append(f"Troubleshooting: {record.troubleshooting}")
+    for gap in record.gaps:
+        lines.append(f"Gap: {gap}")
+    return "\n".join(lines)
+
+
 def answer(question: str, hits: list[Hit], hint_mode: bool) -> Answer:
-    """Answered with citations, or insufficient. [Stub -> Part C]"""
+    """Answered with citations, or insufficient. No hits means no model call."""
     if not hits:
         return Answer(
             kind="insufficient",
             text="I could not find a confirmed record about this.",
             uncertainties=["No confirmed record matches the question."],
         )
-    best = hits[0].record
-    return Answer(
-        kind="answered",
-        text=f"Stub decoder: see **{best.procedure}**.",
-        cited_record_ids=[best.id],
-        contributors=best.contributors,
-    )
+    system = (PROMPTS / "system.md").read_text(encoding="utf-8")
+    if hint_mode:
+        system += (PROMPTS / "hint.md").read_text(encoding="utf-8")
+    records = "\n\n".join(_format_record(hit.record) for hit in hits)
+    user = f"Question: {question}\n\nRecords:\n\n{records}"
+    return check_citations(chat_json(system, user, Answer), hits)
