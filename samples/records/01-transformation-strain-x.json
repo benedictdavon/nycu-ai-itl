@@ -1,0 +1,22 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Alex Chen",
+    "title": "Transformation of strain X with plasmid P",
+    "link": "https://example.com/benchling/transformation-strain-x",
+    "project_tags": ["Project X"]
+  },
+  "record": {
+    "procedure": "Transformation of strain X with plasmid P",
+    "based_on": "Drive SOP \"Transformation v2\"",
+    "contributors": ["Alex Chen"],
+    "project_tags": ["Project X"],
+    "changes": [
+      {"what": "Wash volume doubled", "reason": "cells clumped with the SOP wash volume"},
+      {"what": "Plasmid amount: 50 ng", "reason": null},
+      {"what": "Recovery step unchanged from the SOP", "reason": null}
+    ],
+    "troubleshooting": "First attempt gave few colonies. Fixed by the wash change above.",
+    "gaps": []
+  }
+}

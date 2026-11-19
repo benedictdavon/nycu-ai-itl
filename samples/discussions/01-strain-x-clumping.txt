@@ -1,0 +1,9 @@
+Chris Wu: Hi Alex, I am about to transform strain X with plasmid P. The records say the cells clumped after washing. Why did that happen?
+
+Alex Chen: Hi Chris. With the SOP wash volume, the cells were pelleted into a small volume and stuck together while they were still concentrated. Doubling the wash volume spread them out, and the clumping stopped.
+
+Chris Wu: So the clumping is about the volume, not the plasmid?
+
+Alex Chen: Yes. The clumping was there on the first try only. On the second try I also used 50 ng plasmid, and the colonies were normal. Keep the recovery step as in the SOP.
+
+Chris Wu: Thanks, that answers it. I will double the wash volume and note the result.

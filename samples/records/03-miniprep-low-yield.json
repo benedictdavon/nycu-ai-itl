@@ -1,0 +1,20 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Chris Wu",
+    "title": "Plasmid miniprep from a 5 mL overnight culture",
+    "link": "https://example.com/benchling/miniprep-5ml",
+    "project_tags": []
+  },
+  "record": {
+    "procedure": "Plasmid miniprep from a 5 mL overnight culture",
+    "based_on": "Kit manual",
+    "contributors": ["Chris Wu"],
+    "project_tags": [],
+    "changes": [
+      {"what": "Lysis step extended from 2 to 5 minutes", "reason": "low yield"}
+    ],
+    "troubleshooting": "Low yield, about 20 ng per microliter. Fixed by a longer lysis step of 5 minutes.",
+    "gaps": []
+  }
+}

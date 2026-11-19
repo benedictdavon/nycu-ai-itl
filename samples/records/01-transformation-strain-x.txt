@@ -1,0 +1,1 @@
+Transformation of strain X with plasmid P, following Drive SOP "Transformation v2". First try (SOP wash volume): few colonies, cells clumped after washing. Second try: doubled the wash volume, used 50 ng plasmid. Recovery step was the same as the SOP. Normal colonies on the second try.

@@ -1,0 +1,20 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Dana Huang",
+    "title": "Western blot for a 150 kDa protein",
+    "link": "https://example.com/benchling/western-150kda",
+    "project_tags": []
+  },
+  "record": {
+    "procedure": "Western blot for a 150 kDa protein",
+    "based_on": "Lab western blot protocol",
+    "contributors": ["Dana Huang"],
+    "project_tags": [],
+    "changes": [
+      {"what": "Transfer at 30 V overnight instead of 100 V for 1 hour", "reason": "almost no signal at the expected size; the 150 kDa protein seemed to stay in the gel"}
+    ],
+    "troubleshooting": "Almost no signal at the expected size. Fixed by a longer transfer at lower voltage.",
+    "gaps": []
+  }
+}

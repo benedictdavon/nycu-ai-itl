@@ -1,0 +1,1 @@
+Preparation of competent cells, 50 mL culture grown to OD600 0.4, following the lab's standard competent cell protocol. Cells were chilled on ice and washed in cold 0.1 M CaCl2. I added one extra cold wash step, with the cells kept on ice throughout. Efficiency before the change was about 10^4 colonies per microgram; after the extra cold wash it was about 10^5.

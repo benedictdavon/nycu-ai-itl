@@ -1,0 +1,20 @@
+{
+  "info": {
+    "kind": "upload",
+    "contributor": "Alex Chen",
+    "title": "Preparation of competent cells, 50 mL culture",
+    "link": "https://example.com/benchling/competent-cells-50ml",
+    "project_tags": []
+  },
+  "record": {
+    "procedure": "Preparation of competent cells, 50 mL culture",
+    "based_on": "Lab standard competent cell protocol",
+    "contributors": ["Alex Chen"],
+    "project_tags": [],
+    "changes": [
+      {"what": "One extra cold wash step added, cells kept on ice", "reason": null}
+    ],
+    "troubleshooting": "Efficiency was about 10^4 colonies per microgram. The extra cold wash raised it to about 10^5.",
+    "gaps": []
+  }
+}
