@@ -201,9 +201,9 @@ Every member needs at least two merged PRs with substantive code by CP2, so each
 | Day | Code steward |
 |---|---|
 | Until Thu Nov 19 | Darius |
-| Fri Nov 20 | **TBD** |
-| Sat Nov 21 (merge day) | **TBD** |
-| Sun Nov 22 | **TBD** |
+| Fri Nov 20 | Tommy |
+| Sat Nov 21 (merge day) | 李原誌 |
+| Sun Nov 22 | Benedict |
 
 | When | What |
 |---|---|
