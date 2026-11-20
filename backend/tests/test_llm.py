@@ -1,4 +1,4 @@
-"""Tests for the LLM client. No network: Ollama is replaced by httpx.MockTransport."""
+"""Tests for the LLM client. No network: the server is replaced by httpx.MockTransport."""
 
 import json
 from collections.abc import Callable, Iterator
@@ -22,34 +22,52 @@ def fake() -> Iterator[llm.FakeClient]:
     llm.reset_llm()
 
 
-def _ollama(handler: Callable[[httpx.Request], httpx.Response]) -> llm.OllamaClient:
-    return llm.OllamaClient(
-        "http://ollama", "test-model", 5, transport=httpx.MockTransport(handler)
+def _client(
+    handler: Callable[[httpx.Request], httpx.Response], api_key: str = ""
+) -> llm.OpenAIChatClient:
+    return llm.OpenAIChatClient(
+        "http://server/v1", "test-model", 5, api_key=api_key, transport=httpx.MockTransport(handler)
     )
 
 
-def test_ollama_sends_schema_and_reads_reply() -> None:
-    sent: list[dict] = []
+def test_sends_schema_no_thinking_and_reads_reply() -> None:
+    sent: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        sent.append(json.loads(request.content))
-        return httpx.Response(200, json={"message": {"content": '{"a": 1}'}})
+        sent.append(request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"a": 1}'}}]})
 
-    assert _ollama(handler).chat("sys", "user", schema=Pair) == '{"a": 1}'
-    assert sent[0]["model"] == "test-model"
-    assert sent[0]["format"] == Pair.model_json_schema()
-    assert sent[0]["options"]["temperature"] == 0
+    assert _client(handler, api_key="secret").chat("sys", "user", schema=Pair) == '{"a": 1}'
+    assert sent[0].url.path == "/v1/chat/completions"
+    assert sent[0].headers["authorization"] == "Bearer secret"
+    body = json.loads(sent[0].content)
+    assert body["temperature"] == 0
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}
+    assert body["response_format"]["json_schema"]["schema"] == Pair.model_json_schema()
 
 
-def test_ollama_errors_become_llm_error() -> None:
-    client = _ollama(lambda request: httpx.Response(500, json={"error": "boom"}))
+def test_no_auth_header_without_key() -> None:
+    sent: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "hi"}}]})
+
+    _client(handler).chat("sys", "user")
+    assert "authorization" not in sent[0].headers
+    assert "response_format" not in json.loads(sent[0].content)
+
+
+def test_errors_become_llm_error() -> None:
     with pytest.raises(llm.LLMError):
-        client.chat("sys", "user")
-
-
-def test_empty_model_is_refused() -> None:
+        _client(lambda request: httpx.Response(500, json={"error": "boom"})).chat("sys", "user")
     with pytest.raises(llm.LLMError):
-        llm.OllamaClient("http://ollama", " ", 5)
+        _client(lambda request: httpx.Response(200, json={"choices": []})).chat("sys", "user")
+
+
+def test_empty_base_url_is_refused() -> None:
+    with pytest.raises(llm.LLMError):
+        llm.OpenAIChatClient(" ", "", 5)
 
 
 def test_chat_json_validates(fake: llm.FakeClient) -> None:
