@@ -50,7 +50,7 @@ describe("WhoScreen", () => {
     await user.click(await screen.findByRole("button", { name: "Dana Huang" }));
 
     await waitFor(() => expect(localStorage.getItem("labknow.me")).toBe("Dana Huang"));
-    expect(await screen.findByRole("heading", { name: "Ask" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "What do you need to know?" })).toBeInTheDocument();
   });
 
   it("shows an error card when the list fails to load, and Try again loads it", async () => {

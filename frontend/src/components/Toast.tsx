@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toast && (
           <div
             key={toast.id}
-            className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-md items-start gap-3 rounded-md bg-bench-ink p-4 shadow-float sm:inset-x-auto sm:right-6 sm:left-auto"
+            className="fixed inset-x-4 bottom-6 z-50 mx-auto flex max-w-[28rem] items-start gap-3 rounded-md bg-bench-ink p-4 shadow-float sm:inset-x-auto sm:right-6 sm:left-auto sm:w-full"
           >
             <Check aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-selection" />
             <div className="min-w-0 flex-1">

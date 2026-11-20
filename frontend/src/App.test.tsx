@@ -33,6 +33,6 @@ describe("routing", () => {
 
     renderApp("/no-such-page");
 
-    expect(await screen.findByRole("heading", { name: "Ask" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "What do you need to know?" })).toBeInTheDocument();
   });
 });
