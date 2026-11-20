@@ -1,12 +1,19 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import type { RecordDraft } from "../../api/types";
 import { ToastProvider } from "../../components/Toast";
 import { MeProvider } from "../../lib/me";
 import ReviewScreen from "./ReviewScreen";
 import { errorResponse, jsonResponse, stubFetch, writes, type Call } from "./testing";
+
+// jsdom has no scrollIntoView. The confirm panel is scrolled into view, so the tests stub it.
+const scrollIntoView = vi.fn();
+beforeEach(() => {
+  scrollIntoView.mockClear();
+  Element.prototype.scrollIntoView = scrollIntoView;
+});
 
 const INFO = {
   id: 1,
@@ -72,17 +79,20 @@ function stubReview(options: Options = {}) {
   });
 }
 
+/** A data router, because the review screen blocks leaving with unsaved edits (useBlocker). */
 function renderAt(state?: unknown) {
+  const router = createMemoryRouter(
+    [
+      { path: "/review/:recordId", element: <ReviewScreen /> },
+      { path: "/records/:recordId", element: <p>Record page</p> },
+      { path: "/inbox", element: <p>Inbox page</p> },
+    ],
+    { initialEntries: [{ pathname: "/review/7", state }] },
+  );
   return render(
     <MeProvider>
       <ToastProvider>
-        <MemoryRouter initialEntries={[{ pathname: "/review/7", state }]}>
-          <Routes>
-            <Route path="/review/:recordId" element={<ReviewScreen />} />
-            <Route path="/records/:recordId" element={<p>Record page</p>} />
-            <Route path="/inbox" element={<p>Inbox page</p>} />
-          </Routes>
-        </MemoryRouter>
+        <RouterProvider router={router} />
       </ToastProvider>
     </MeProvider>,
   );
@@ -293,5 +303,195 @@ describe("Check the draft: access and progress", () => {
       "href",
       "/inbox",
     );
+  });
+});
+
+describe("Check the draft: an open edit blocks Save and Confirm", () => {
+  it("refuses Save draft while a row is open, names the row and focuses its input", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Based on" }));
+    await user.type(screen.getByRole("textbox", { name: /Based on/ }), "Kit A");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Save or cancel your edit to Based on first.");
+    expect(writes(calls)).toEqual([]);
+    expect(screen.getByRole("textbox", { name: /Based on/ })).toHaveFocus();
+  });
+
+  it("refuses Confirm record while a row is open: the panel does not open", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Based on" }));
+    await user.type(screen.getByRole("textbox", { name: /Based on/ }), "Kit A");
+    await user.click(screen.getByRole("button", { name: "Confirm record" }));
+
+    expect(screen.queryByRole("heading", { name: "Before you confirm" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Save or cancel your edit to Based on first.");
+    expect(writes(calls)).toEqual([]);
+    expect(screen.getByRole("textbox", { name: /Based on/ })).toHaveFocus();
+  });
+
+  it("refuses Confirm and publish for a row opened after the panel was shown, with the message in the panel", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Confirm record" }));
+    await user.click(screen.getByRole("button", { name: "Edit Based on" }));
+    await user.click(screen.getByRole("button", { name: "Confirm and publish" }));
+
+    expect(writes(calls)).toEqual([]);
+    const panel = screen.getByRole("region", { name: "Before you confirm" });
+    expect(within(panel).getByRole("alert")).toHaveTextContent(
+      "Save or cancel your edit to Based on first.",
+    );
+  });
+
+  it("a newly added change blocks Save draft until it is cancelled", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Add a change" }));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Save or cancel your edit to a new change first.",
+    );
+    expect(writes(calls)).toEqual([]);
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Draft saved");
+    expect(writes(calls)).toEqual(["PUT /api/records/7"]);
+  });
+
+  it("names an open existing change by its text in the message", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit change: Recovery 1 h at 37 °C" }));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      'Save or cancel your edit to the change "Recovery 1 h at 37 °C" first.',
+    );
+    expect(writes(calls)).toEqual([]);
+  });
+});
+
+describe("Check the draft: the confirm panel", () => {
+  it("scrolls the panel into view and focuses its heading when it opens", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Confirm record" }));
+
+    expect(screen.getByRole("heading", { name: "Before you confirm" })).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("Escape closes the panel and focuses Confirm record", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Confirm record" }));
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("heading", { name: "Before you confirm" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm record" })).toHaveFocus();
+  });
+
+  it("Go back and check closes the panel and focuses Confirm record", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Confirm record" }));
+    await user.click(screen.getByRole("button", { name: "Go back and check" }));
+
+    expect(screen.queryByRole("heading", { name: "Before you confirm" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm record" })).toHaveFocus();
+  });
+});
+
+describe("Check the draft: leaving with unsaved edits", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("confirms and opens the record without a leave prompt", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Procedure" }));
+    await user.type(screen.getByRole("textbox", { name: "Procedure" }), ", v2");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Confirm record" }));
+    await user.click(screen.getByRole("button", { name: "Confirm and publish" }));
+
+    expect(await screen.findByText("Record page")).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("asks before an in-app link leaves with unsaved edits, and stays when declined", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Procedure" }));
+    await user.type(screen.getByRole("textbox", { name: "Procedure" }), ", v2");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("link", { name: "Back to To review" }));
+
+    await waitFor(() =>
+      expect(confirm).toHaveBeenCalledWith(
+        "You have unsaved changes to this draft. Leave without saving them?",
+      ),
+    );
+    expect(screen.getByRole("heading", { name: "Check the draft" })).toBeInTheDocument();
+    expect(screen.queryByText("Inbox page")).not.toBeInTheDocument();
+  });
+
+  it("prevents the reload or close prompt only while there are unsaved edits", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+    await screen.findByRole("heading", { name: "Check the draft" });
+
+    const clean = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(clean);
+    expect(clean.defaultPrevented).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "Edit Procedure" }));
+    await user.type(screen.getByRole("textbox", { name: "Procedure" }), ", v2");
+
+    const dirty = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(dirty);
+    expect(dirty.defaultPrevented).toBe(true);
   });
 });

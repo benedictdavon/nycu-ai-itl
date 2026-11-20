@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Link, useBlocker, useLocation, useNavigate, useParams } from "react-router";
 import { ApiError, confirmRecord, errorFields, getInfo, getRecord, updateRecord } from "../../api/client";
 import type { FollowUp, Info, LabRecord } from "../../api/types";
 import { AddChip } from "../../components/Chip";
@@ -73,6 +73,23 @@ function failureFrom(err: unknown, step: "save" | "confirm"): Failure {
     if (err.status === 422) return { kind: "invalid", fields: errorFields(err) };
   }
   return { kind: step };
+}
+
+/** Where a press was refused: the card's action bar, or the "Before you confirm" panel. */
+type Place = "card" | "panel";
+
+/** A row open for editing, with the name the message uses for it. */
+type OpenRow = { id: string; label: string };
+
+/** The fields inside an open row, in page order. */
+const OPEN_FIELD = "[data-editing] input, [data-editing] textarea, [data-editing] select, [data-editing] button";
+
+/** "Save or cancel your edit to Based on first." or "... edits to Based on and Project tags first." */
+function openRowsMessage(rows: OpenRow[]): string {
+  const labels = rows.map((row) => row.label);
+  const names =
+    labels.length > 1 ? `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}` : labels[0];
+  return `Save or cancel your ${labels.length === 1 ? "edit" : "edits"} to ${names} first.`;
 }
 
 /** Check the draft: /review/:recordId. Loads the draft, then shows it for checking. */
@@ -186,6 +203,80 @@ function DraftReview({ record, info, followUps }: Loaded) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
+  // The rows open for editing, and the press that was refused because of them.
+  const [rowEdits, setRowEdits] = useState<{ open: OpenRow[]; blocked: Place | null }>({
+    open: [],
+    blocked: null,
+  });
+  const cardRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // The Confirm record button that opened the panel. Escape and "Go back" return focus to it.
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Set just before a confirmed record opens, so the leave check below lets that one move through.
+  const leavingRef = useRef(false);
+  // Unsaved: a row is open, or an edit was applied but not saved with Save draft.
+  const unsaved = working.edited || rowEdits.open.length > 0;
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      unsaved && currentLocation.pathname !== nextLocation.pathname && !leavingRef.current,
+  );
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    if (window.confirm("You have unsaved changes to this draft. Leave without saving them?")) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+
+  useEffect(() => {
+    if (!unsaved) return;
+    // Reload, close the tab or type another address: the browser asks before it leaves.
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
+
+  useEffect(() => {
+    if (!confirming) return;
+    // Bring the whole panel into view, then focus its heading. The focus does not scroll again.
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    panelRef.current?.scrollIntoView?.({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+    headingRef.current?.focus({ preventScroll: true });
+  }, [confirming]);
+
+  /** A row reports when it opens or closes. When the last open row closes, the message goes too. */
+  function setRowOpen(id: string, label: string, open: boolean) {
+    setRowEdits((current) => {
+      const isOpen = current.open.some((row) => row.id === id);
+      if (isOpen === open) return current;
+      const next = open
+        ? [...current.open, { id, label }]
+        : current.open.filter((row) => row.id !== id);
+      return { open: next, blocked: next.length === 0 ? null : current.blocked };
+    });
+  }
+
+  /**
+   * Refuses a press while a row is open. The message appears by that press, and focus moves to the
+   * open row so its edit can be saved or cancelled. Returns true when the press was refused.
+   */
+  function blockedByOpenRow(place: Place): boolean {
+    if (rowEdits.open.length === 0) return false;
+    setRowEdits((current) => ({ ...current, blocked: place }));
+    cardRef.current?.querySelector<HTMLElement>(OPEN_FIELD)?.focus();
+    return true;
+  }
+
+  function closePanel() {
+    setConfirming(false);
+    confirmButtonRef.current?.focus();
+  }
 
   const rows = draftRows(working);
   const sources = sourceTexts(info, followUps, kept);
@@ -228,6 +319,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
 
   async function confirmAndPublish() {
     if (me === null) return;
+    // A row may have been opened after the panel was shown, so check again.
+    if (blockedByOpenRow("panel")) return;
     setBusy(true);
     setFailure(null);
     let step: "save" | "confirm" = "confirm";
@@ -243,6 +336,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
       setFailure(failureFrom(err, step));
       return;
     }
+    leavingRef.current = true;
     navigate(`/records/${record.id}`);
     show("Record confirmed", "Labmates can find it when they ask.");
   }
@@ -277,7 +371,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
   const main = (
     <>
       {failureView}
-      <Card>
+      <Card ref={cardRef}>
         <TextRow
           label="Procedure"
           value={working.procedure}
@@ -285,6 +379,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
           requiredMessage="Add the procedure name."
           valueClassName="type-title text-bench-ink"
           onSave={(value) => edit((current) => ({ ...current, procedure: value }))}
+          onEditingChange={(open) => setRowOpen("procedure", "Procedure", open)}
           {...numberProps("procedure")}
         />
         <TextRow
@@ -293,6 +388,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
           value={working.based_on}
           emptyText="Not given"
           onSave={(value) => edit((current) => ({ ...current, based_on: value || null }))}
+          onEditingChange={(open) => setRowOpen("based_on", "Based on", open)}
           {...numberProps("based_on")}
         />
         <ContributorsRow
@@ -300,10 +396,12 @@ function DraftReview({ record, info, followUps }: Loaded) {
           uploader={info.contributor}
           me={me}
           onSave={(list) => edit((current) => ({ ...current, contributors: list }))}
+          onEditingChange={(open) => setRowOpen("contributors", "Contributors", open)}
         />
         <TagsRow
           tags={working.project_tags}
           onSave={(tags) => edit((current) => ({ ...current, project_tags: tags }))}
+          onEditingChange={(open) => setRowOpen("tags", "Project tags", open)}
         />
 
         <section className="mt-6">
@@ -327,6 +425,14 @@ function DraftReview({ record, info, followUps }: Loaded) {
                     ...current,
                     changes: current.changes.filter((item) => item.key !== change.key),
                   }))
+                }
+                onEditingChange={(open) =>
+                  setRowOpen(
+                    `change-${change.key}`,
+                    // Named by its text as it stood when the row opened. A just-added change has none.
+                    change.what ? `the change "${change.what}"` : "a new change",
+                    open,
+                  )
                 }
                 {...numberProps(`change-${change.key}`)}
               />
@@ -353,6 +459,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
           value={working.troubleshooting}
           emptyText="Nothing recorded"
           onSave={(value) => edit((current) => ({ ...current, troubleshooting: value || null }))}
+          onEditingChange={(open) => setRowOpen("troubleshooting", "What went wrong, and the fix", open)}
           {...numberProps("troubleshooting")}
         />
 
@@ -402,26 +509,50 @@ function DraftReview({ record, info, followUps }: Loaded) {
         )}
 
         <CardActionBar>
-          <Button variant="secondary" onClick={() => void saveDraft()} disabled={busy}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (!blockedByOpenRow("card")) void saveDraft();
+            }}
+            disabled={busy}
+          >
             Save draft
           </Button>
           <Button
             variant={confirming ? "secondary" : "primary"}
-            onClick={() => setConfirming(true)}
+            onClick={(event) => {
+              if (blockedByOpenRow("card")) return;
+              confirmButtonRef.current = event.currentTarget;
+              setConfirming(true);
+            }}
             disabled={busy}
           >
             <Check aria-hidden="true" className="size-5" />
             Confirm record
           </Button>
+          {rowEdits.blocked === "card" && (
+            <p role="alert" className="w-full text-right type-body-small text-alert-ink">
+              {openRowsMessage(rowEdits.open)}
+            </p>
+          )}
         </CardActionBar>
       </Card>
 
       {confirming && (
         <section
+          ref={panelRef}
           aria-labelledby={confirmHeadingId}
-          className="mt-6 rounded-lg bg-coomassie-wash p-5 text-coomassie-ink sm:px-8 sm:py-6"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") closePanel();
+          }}
+          className="scroll-mt-6 scroll-mb-6 mt-6 rounded-lg bg-coomassie-wash p-5 text-coomassie-ink sm:px-8 sm:py-6"
         >
-          <h2 id={confirmHeadingId} className="type-title">
+          <h2
+            ref={headingRef}
+            id={confirmHeadingId}
+            tabIndex={-1}
+            className="type-title w-fit rounded-md focus:outline-[3px] focus:outline-offset-2 focus:outline-coomassie-blue"
+          >
             Before you confirm
           </h2>
           <ul className="mt-3 flex flex-col gap-2 type-body">
@@ -454,10 +585,15 @@ function DraftReview({ record, info, followUps }: Loaded) {
             <Button onClick={() => void confirmAndPublish()} disabled={busy}>
               Confirm and publish
             </Button>
-            <Button variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>
+            <Button variant="secondary" onClick={closePanel} disabled={busy}>
               Go back and check
             </Button>
           </div>
+          {rowEdits.blocked === "panel" && (
+            <p role="alert" className="mt-3 type-body text-alert-ink">
+              {openRowsMessage(rowEdits.open)}
+            </p>
+          )}
         </section>
       )}
     </>

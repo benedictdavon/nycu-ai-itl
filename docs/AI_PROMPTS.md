@@ -1,0 +1,78 @@
+# AI prompts log
+
+Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GUIDELINES.md` §2 asks. Newest work at the bottom. A human reviews everything an AI wrote before it is merged.
+
+## Frontend UI fix pass (branch `fix/frontend-ui-audit`, 2026-11-20)
+
+- **Who:** Claude Opus 5.5 orchestrated and reviewed; Claude Haiku 5.5 (one subagent) wrote all code. The human (benedictdavon) set the task, chose the confirm-step option and approves each phase before it is committed.
+- **Source:** the audit `frontend/.impeccable/audit/2026-11-20T14-42-35Z__project.md` (score 14/20; git-ignored).
+- **Human decision:** the confirm step stays an inline panel that scrolls into view and takes focus (option a); no spec change.
+
+### Phase 1: harden (P1)
+
+#### Brief to the implementer
+
+    You are the implementer for a UI fix pass on LabKnow's frontend (Part D). An orchestrator reviews your work. Phase 1 of 3: harden. Do only this phase, no extras.
+    
+    ## Where and rules
+    - Worktree (absolute path, run everything here): C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21
+    - Edit only files under `frontend/`. Do NOT touch `backend/`, `docs/`, `models.py`. No git commands (no commit, stash, checkout). Do not start or stop any server. Do not run `npm run build` (the orchestrator does).
+    - Read `CLAUDE.md` (repo root) and `frontend/DESIGN.md` first, then every file you change and its tests before editing. Match the surrounding style (Tailwind token classes such as `text-coomassie-blue`, `type-label`; comments explain why).
+    - Do not add features, options or abstractions beyond what is listed. Prefer the simplest change. Re-read your diff before reporting and remove anything not needed.
+    - When done, run in `frontend/`: `npm run typecheck`, `npm run lint`, `npm test`. All must pass. Report failures as failures with output.
+    - Report back: the list of files changed, a short description per change, test names you added, and the exact command results (pass/fail counts). Don't claim anything you didn't check.
+    
+    ## Fix 1: unsaved row edits are silently lost (P1)
+    Files: `frontend/src/screens/contributor/ReviewScreen.tsx`, `frontend/src/screens/contributor/DraftRows.tsx`, `frontend/src/App.tsx`, tests.
+    
+    Problem: each draft row (`TextRow`, `TagsRow`, `ContributorsRow`, `ChangeRow` in DraftRows.tsx) keeps its edit text in local state (e.g. DraftRows.tsx:80-81). If the contributor types in an open row and then presses "Save draft" or "Confirm record" → "Confirm and publish", the typed text is dropped without warning, and confirmation is irreversible.
+    
+    Chosen approach (orchestrator decision): BLOCK, don't lift state. While any row is open (in edit mode), "Save draft", "Confirm record" and "Confirm and publish" do not proceed; instead they show a message that names the open row(s). Reason: blocking is simpler and safer than lifting state up, which would also need each row's validation (required procedure, empty change) to run at publish time.
+    
+    Details:
+    - Each row reports whether it is open via a new prop, e.g. `onEditingChange: (open: boolean) => void`, called from a `useEffect` on its `editing` state, with cleanup reporting `false` on unmount (a removed change row must unregister).
+    - `ChangeRow` mounts already open when `startEditing` is true (a newly added change); that must register too.
+    - ReviewScreen keeps the open rows keyed by a stable row id (e.g. "procedure", "based_on", "contributors", "tags", "troubleshooting", `change-${change.key}`), mapping to a human label. Change rows have no unique label: name them "a change from the SOP" (or the change text if it has one, e.g. `Change: "Eluted in 30 uL…"` — keep it simple).
+    - Message text, e.g.: "Save or cancel your edit to Based on first." (plural: "Save or cancel your edits to Based on and Project tags first."). Render it right next to the button that was pressed: in the card action bar for Save draft / Confirm record, and inside the "Before you confirm" panel for Confirm and publish. NOT in `failureView` at the top of the card (that would be off-screen, the same bug as Fix 2). Use `role="alert"` (or an aria-live region) so it is announced. After showing it, move focus to the first open row's first input so the user can act. Clear the message when no rows are open any more.
+    - Re-check on "Confirm and publish": a row can be opened after the panel is shown.
+    - Do not disable the buttons for this (a disabled button would need a reason nearby anyway); the press shows the message.
+    
+    Warn before leaving with unsaved edits:
+    - "Unsaved" = any row open OR `working.edited` is true (applied but not saved with Save draft). After a successful Save draft, `toWorking(saved, …)` resets `edited` to false (check `draft.ts`).
+    - Browser leave (reload, close tab, typed URL): `beforeunload` listener while unsaved (react-router's `useBeforeUnload` or a plain effect; call `event.preventDefault()`).
+    - In-app leave (header links Ask / To review / Switch, "Back to To review"): `App.tsx` uses `BrowserRouter`, so `useBlocker` is not available. Switch `App` to a data router with the smallest change: `const router = createBrowserRouter([{ path: "*", element: <AppRoutes /> }])` and `<RouterProvider router={router} />` inside `MeProvider` (react-router 7.18.6 is installed; check the exports in `react-router`). Keep `AppRoutes` unchanged so existing tests that wrap `AppRoutes` in `MemoryRouter` keep working where they don't render ReviewScreen. Then in the review screen use `useBlocker(({ currentLocation, nextLocation }) => unsaved && currentLocation.pathname !== nextLocation.pathname && !leaving.current)`; when `blocker.state === "blocked"`, ask with `window.confirm("You have unsaved changes to this draft. Leave without saving them?")` and call `blocker.proceed()` or `blocker.reset()`.
+    - The blocker must NOT block the screen's own navigation after a successful confirm (`navigate(`/records/${record.id}`)` in `confirmAndPublish`). Use a ref set just before that navigate (or equivalent). Add a test for this.
+    - Any test that renders `ReviewScreen` needs a data router: use `createMemoryRouter` + `RouterProvider` in `ReviewScreen.test.tsx` (and any other test that reaches /review/:id, e.g. check `App.test.tsx`, `InboxScreen.test.tsx`).
+    
+    ## Fix 2: the confirm step is invisible (P1)
+    File: `frontend/src/screens/contributor/ReviewScreen.tsx` (around lines 404-462).
+    
+    Problem: pressing "Confirm record" sets `confirming` and renders the "Before you confirm" panel below the card. Measured in the browser at 1920x1080: the panel's top is at 1088px in a 1080px viewport, no scroll happens, focus stays on the button, and the button just turns from primary to secondary (white). The user decided: KEEP the inline panel (SCREENS.md:94 specifies it), no spec change, but:
+    - When the panel opens, scroll it into view and move focus to its heading "Before you confirm" (give the h2 `tabIndex={-1}` and a ref; focus after render, e.g. in an effect keyed on `confirming`). Scroll so the whole panel is visible when it fits (e.g. `scrollIntoView({ block: "nearest" })` on the section, or `block: "center"`); use `behavior: "smooth"` only when `window.matchMedia("(prefers-reduced-motion: reduce)")` does not match, otherwise `"auto"`. Focusing the heading should not cause a second jump (use `focus({ preventScroll: true })`).
+    - The heading must show a visible focus indicator when focused programmatically (DESIGN.md: visible 3px Coomassie Blue focus ring; the global `:focus-visible` rule is in `frontend/src/index.css:148`; check that a programmatically focused `tabIndex=-1` heading actually matches `:focus-visible` in Chrome after a mouse click — if not, add a small `focus:` style on the heading using the same 3px coomassie-blue outline, offset 2px, and rounded corners).
+    - Escape pressed anywhere inside the panel, and the "Go back and check" button, close the panel and return focus to the "Confirm record" button (keep a ref to it).
+    - Keep DESIGN.md's rule that an irreversible action is never a single click: "Confirm record" only opens the panel; "Confirm and publish" in the panel does the irreversible POST.
+    - Keep the existing demotion of "Confirm record" to secondary while the panel is open (one primary button per view) — it is fine now that the panel is visible and focused.
+    - jsdom has no `Element.prototype.scrollIntoView`: guard the call in the app only if needed for robustness (`el.scrollIntoView?.(...)` is acceptable) and stub it in tests (`Element.prototype.scrollIntoView = vi.fn()`).
+    
+    ## Tests to add (in `frontend/src/screens/contributor/ReviewScreen.test.tsx`; keep all existing tests passing)
+    1. Typing in an open row (e.g. Edit "Based on", type text, don't press the row's Save) then pressing "Save draft" makes no PUT, shows a message naming "Based on", and focuses the open input.
+    2. Same with "Confirm record": the panel does not open (or, if you choose to let it open, "Confirm and publish" makes no PUT/POST); the message names the row.
+    3. Opening a row after the panel is shown, then "Confirm and publish": no PUT/POST, message in the panel.
+    4. A newly added change (Add a change, which mounts open) blocks Save draft; after Cancel/removal it no longer blocks.
+    5. Pressing "Confirm record" with no open rows focuses the "Before you confirm" heading and calls scrollIntoView.
+    6. Escape inside the panel closes it and focuses "Confirm record"; "Go back and check" does the same.
+    7. After a successful confirm, the app navigates to /records/:id without a leave prompt (`window.confirm` spy not called).
+    8. With unsaved edits, an in-app navigation is blocked and asks `window.confirm`; declining keeps the user on the review screen. A `beforeunload` event is default-prevented while unsaved and not when clean.
+
+#### Fix round 1
+
+    Phase 1 fix round 1: three small changes in frontend/src/screens/contributor/ReviewScreen.tsx. Your Phase 1 diff passed review and browser checks otherwise. Do only these, then rerun typecheck, lint and test and report.
+    
+    1. The panel lands flush against the viewport bottom: at 1920x1080 after the scroll settles, the panel's bottom = 1080 = innerHeight; at 390x844, bottom = 844. Add a scroll margin to the panel section (e.g. Tailwind `scroll-mt-6 scroll-mb-6`) so `scrollIntoView({block:"nearest"})` leaves 24px of breathing room.
+    
+    2. The heading's focus ring spans the whole card width. The h2 is a block, so the 3px ring draws a full-width rounded box that looks like an input. Make the heading only as wide as its text (e.g. `w-fit`) so the ring hugs "Before you confirm". Keep the 3px coomassie-blue outline, offset 2px.
+    
+    3. Change rows are all named "a change from the SOP" in the guard message. When the change has text, name it like `the change "Eluted in 30 uL water instead of 50 uL"` (use `change.what` at the time the row opens). Keep "a new change" (or the current wording) when the text is empty (a just-added change). Update or add one test that checks the change-row name in the message.
+    
+    No other changes.

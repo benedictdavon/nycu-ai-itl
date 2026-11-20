@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { createBrowserRouter, Navigate, Route, Routes, RouterProvider } from "react-router";
 import { RequireMe } from "./components/RequireMe";
 import { Shell } from "./components/Shell";
 import { MeProvider } from "./lib/me";
@@ -33,12 +33,14 @@ export function AppRoutes() {
   );
 }
 
+// A data router, not BrowserRouter, so that the review screen can block leaving with unsaved edits
+// (useBlocker needs one). AppRoutes itself is unchanged.
+const router = createBrowserRouter([{ path: "*", element: <AppRoutes /> }]);
+
 export default function App() {
   return (
     <MeProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </MeProvider>
   );
 }
