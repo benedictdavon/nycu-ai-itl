@@ -1,4 +1,4 @@
-"""LLM client: Ollama for real runs, a fake client for tests and the no-Ollama setup.
+"""LLM client: llama-server (OpenAI-compatible API) for real runs, a fake client for tests.
 
 Owner: scaffold. Used by the encoder (Part B) and the decoder (Part C).
 """
@@ -20,37 +20,62 @@ class LLMClient(Protocol):
     def chat(self, system: str, user: str, *, schema: type[BaseModel] | None = None) -> str: ...
 
 
-class OllamaClient:
-    """Calls Ollama's /api/chat with temperature 0."""
+class OpenAIChatClient:
+    """Calls an OpenAI-compatible `/v1/chat/completions` (llama-server) with temperature 0.
+
+    Qwen3 thinking is switched off (`enable_thinking: false`): it costs latency and a
+    `<think>` block would break the JSON. Needs the server to run with `--jinja`.
+    """
 
     def __init__(
-        self, host: str, model: str, timeout: float, *, transport: httpx.BaseTransport | None = None
+        self,
+        base_url: str,
+        model: str,
+        timeout: float,
+        *,
+        api_key: str = "",
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
-        if not model.strip():
-            raise LLMError("LLM_MODEL is empty. Set it in .env, or use LLM_BACKEND=fake.")
-        self.model = model
-        self._http = httpx.Client(base_url=host.rstrip("/"), timeout=timeout, transport=transport)
+        if not base_url.strip():
+            raise LLMError("LLM_BASE_URL is empty. Set it in .env, or use LLM_BACKEND=fake.")
+        self.model = model.strip()
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        # trust_env=False: ignore HTTP_PROXY and similar, so no proxy sees the key or record text.
+        self._http = httpx.Client(
+            base_url=base_url.rstrip("/"),
+            timeout=timeout,
+            headers=headers,
+            transport=transport,
+            trust_env=False,
+        )
 
     def chat(self, system: str, user: str, *, schema: type[BaseModel] | None = None) -> str:
         body: dict[str, Any] = {
-            "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
+            "temperature": 0,
             "stream": False,
-            "options": {"temperature": 0},
+            "chat_template_kwargs": {"enable_thinking": False},
         }
+        if self.model:  # llama-server serves one model and ignores this
+            body["model"] = self.model
         if schema is not None:
-            body["format"] = schema.model_json_schema()  # Ollama structured output
+            body["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": schema.__name__, "schema": schema.model_json_schema()},
+            }
         try:
-            response = self._http.post("/api/chat", json=body)
+            response = self._http.post("/chat/completions", json=body)
             response.raise_for_status()
-            return str(response.json()["message"]["content"])
+            return str(response.json()["choices"][0]["message"]["content"])
         except httpx.HTTPError as exc:
-            raise LLMError(f"Ollama request failed: {exc}. Is `ollama serve` running?") from exc
-        except (ValueError, KeyError, TypeError) as exc:
-            raise LLMError("Ollama sent a reply this client does not understand.") from exc
+            raise LLMError(f"Model server request failed: {exc}. Is llama-server running?") from exc
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            raise LLMError(
+                "The model server sent a reply this client does not understand."
+            ) from exc
 
 
 class FakeClient:
@@ -78,8 +103,13 @@ def get_llm() -> LLMClient:
     global _client
     if _client is None:
         settings = get_settings()
-        if settings.llm_backend == "ollama":
-            _client = OllamaClient(settings.ollama_host, settings.llm_model, settings.llm_timeout_s)
+        if settings.llm_backend == "llama_server":
+            _client = OpenAIChatClient(
+                settings.llm_base_url,
+                settings.llm_model,
+                settings.llm_timeout_s,
+                api_key=settings.llm_api_key,
+            )
         else:
             _client = FakeClient()
     return _client
