@@ -65,6 +65,12 @@ def test_errors_become_llm_error() -> None:
         _client(lambda request: httpx.Response(200, json={"choices": []})).chat("sys", "user")
 
 
+def test_proxy_env_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HTTP_PROXY", "http://proxy.invalid:3128")
+    client = llm.OpenAIChatClient("http://server/v1", "", 5)
+    assert client._http.trust_env is False
+
+
 def test_empty_base_url_is_refused() -> None:
     with pytest.raises(llm.LLMError):
         llm.OpenAIChatClient(" ", "", 5)

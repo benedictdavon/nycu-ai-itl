@@ -40,8 +40,13 @@ class OpenAIChatClient:
             raise LLMError("LLM_BASE_URL is empty. Set it in .env, or use LLM_BACKEND=fake.")
         self.model = model.strip()
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        # trust_env=False: ignore HTTP_PROXY and similar, so no proxy sees the key or record text.
         self._http = httpx.Client(
-            base_url=base_url.rstrip("/"), timeout=timeout, headers=headers, transport=transport
+            base_url=base_url.rstrip("/"),
+            timeout=timeout,
+            headers=headers,
+            transport=transport,
+            trust_env=False,
         )
 
     def chat(self, system: str, user: str, *, schema: type[BaseModel] | None = None) -> str:

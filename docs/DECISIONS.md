@@ -25,3 +25,7 @@
 **Why:** Answers 03's open question with rules that code can enforce where possible: no hits and no valid citation are checked in code, so a model that ignores the prompt still cannot answer without a source. Partial answers stay useful to the requester, with what is missing said plainly.
 **Alternative rejected:** A search score threshold decided by Part C (the score belongs to Part A's search, which is not built yet); `insufficient` for any partial answer (hides useful records).
 **Led by:** Darius Lung
+
+## 2026-11-20 — Code steward: Tommy
+**What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
