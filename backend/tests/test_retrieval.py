@@ -90,6 +90,9 @@ def test_suggest_contributor_excludes_the_requester(conn: sqlite3.Connection) ->
     _add(conn, RecordDraft(procedure="Colony PCR on strain X transformants", contributors=["Bea"]))
     assert retrieval.suggest_contributor(conn, question, exclude="Alex Chen") == "Bea"
     assert retrieval.suggest_contributor(conn, question, exclude="Bea") == "Alex Chen"
+    # Several names: the requester and someone already asked (D3-5).
+    assert retrieval.suggest_contributor(conn, question, exclude=["Alex Chen"]) == "Bea"
+    assert retrieval.suggest_contributor(conn, question, exclude=["Alex Chen", "Bea"]) is None
 
 
 def test_seed_loads_samples_once(conn: sqlite3.Connection) -> None:

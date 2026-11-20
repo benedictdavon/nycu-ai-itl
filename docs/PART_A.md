@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Owner** | Tommy |
-| **Doc version** | 1.2, 2026-11-20 (after Darius's review: `exclude`, old-database check, notes) |
+| **Doc version** | 1.3, 2026-11-21 (`exclude` takes several names, for the frontend in #20) |
 | **PRs** | #17 `feat/part-a-fts-search` (search and index). #18 `feat/part-a-suggest-seed` (everything else, this doc included), built on #17. Both are up to date with `main` at `40eac0f`. |
 | **Spec** | [03 Interaction Design](cp1/03_interaction_design.md): D1-2, D2-3a, D3-1, D3-3 |
 | **Plan** | [architecture.md](cp2/architecture.md) §3 (interface), §4 (retrieval choice), §6 (Done when) |
@@ -67,7 +67,7 @@ uv run python -c "import sqlite3; c = sqlite3.connect(':memory:'); c.execute('CR
 |---|---|
 | `index(conn, record)` | Makes a just-confirmed record searchable. Already called by `POST /api/records/{id}/confirm`. |
 | `search(conn, query, k=5) -> list[Hit]` | Confirmed records that share a keyword with the question, best first, at most `k`. Used by `POST /api/ask`. |
-| `suggest_contributor(conn, query, exclude=None) -> str \| None` | The most relevant contributor other than `exclude` (the requester), or `None` if no record is relevant enough (D3-3). |
+| `suggest_contributor(conn, query, exclude=()) -> str \| None` | The most relevant contributor not in `exclude` (the requester and anyone already asked; one name may be a plain string), or `None` if no record is relevant enough (D3-3). |
 | `keywords(query)` | The question's words, lower case, without stopwords and repeats. |
 
 `backend/app/retrieval/seed.py`: `seed(conn)` loads the six made-up records in `samples/records/` as confirmed, searchable records, skipping any already loaded. Run it with `uv run python -m app.retrieval.seed`.
@@ -76,7 +76,7 @@ uv run python -c "import sqlite3; c = sqlite3.connect(':memory:'); c.execute('CR
 
 | Route | In | Out | Errors |
 |---|---|---|---|
-| `GET /api/suggest-contributor?q=...&exclude=...` (new, `backend/app/api/suggest.py`) | `q`: the question. `exclude` (optional): the requester's name, who is never suggested to themselves; the frontend should send it. | `{"contributor": "Alex Chen"}`, or `{"contributor": null}` when nobody is relevant enough | 422 if `q` is missing or blank |
+| `GET /api/suggest-contributor?q=...&exclude=...` (new, `backend/app/api/suggest.py`) | `q`: the question. `exclude` (optional, repeatable: `?exclude=A&exclude=B`): names never suggested. The frontend should send the requester and anyone already asked about the question (D3-5). Blank values are ignored. | `{"contributor": "Alex Chen"}`, or `{"contributor": null}` when nobody is relevant enough | 422 if `q` is missing or blank |
 | `POST /api/ask` (existing) | unchanged | unchanged; its `sources` now come from the real search | unchanged |
 
 ### Other files touched
@@ -162,9 +162,9 @@ Tests for Part A. All use an in-memory database or a temporary file, the fake LL
 | `test_retrieval.py::test_seed_loads_samples_once` | Six samples load as confirmed and searchable; a second run adds none |
 | `test_db.py::test_first_draft_is_kept_after_edits` | An edit changes the record but not its first draft |
 | `test_db.py::test_insert_ask_logs_question_and_answer` | One `asks` row with every field |
-| `test_retrieval.py::test_suggest_contributor_excludes_the_requester` | The excluded name is never suggested; the next best contributor is |
+| `test_retrieval.py::test_suggest_contributor_excludes_the_requester` | Excluded names (one, or several) are never suggested; the next best contributor is |
 | `test_db.py::test_old_database_is_refused` | A database without `records.first_draft` raises `OutdatedDatabaseError` |
-| `test_api_flow.py::test_paste_review_confirm_ask` step 5 | `GET /api/suggest-contributor` over HTTP: a name, `null` when the only match is excluded, `null` for an unrelated question, and 422 for a blank `q` |
+| `test_api_flow.py::test_paste_review_confirm_ask` step 5 | `GET /api/suggest-contributor` over HTTP: a name, `null` when the only match is excluded, a repeated `exclude` with a blank value, `null` for an unrelated question, and 422 for a blank `q` |
 
 To run only Part A's tests: `uv run pytest -q tests/test_retrieval.py tests/test_db.py`.
 
@@ -265,6 +265,14 @@ Chris is the one asking, so he should not be pointed to himself. Repeat with `ex
 |---|---|---|
 | `Who knows about low yield in a miniprep?` | `Chris Wu` | [ ] `{"contributor": null}`: Chris has the only miniprep record |
 | `Why did the cells clump after washing?` | `Chris Wu` | [ ] `{"contributor": "Alex Chen"}`: excluding someone else changes nothing |
+
+`exclude` can be given more than once, for the requester and anyone already asked (D3-5). In the `/docs` page, click **Add string item** under `exclude` for a second name:
+
+| `q` | `exclude` | Expected |
+|---|---|---|
+| `low yield or low recovery` | (none) | [ ] `{"contributor": "Chris Wu"}` (miniprep, low yield) |
+| `low yield or low recovery` | `Chris Wu` | [ ] `{"contributor": "Bea Lin"}`: gel extraction, low recovery |
+| `low yield or low recovery` | `Chris Wu` and `Bea Lin` | [ ] `{"contributor": null}` |
 
 ### Step 5: A contributor uploads a new record; it is not searchable yet
 

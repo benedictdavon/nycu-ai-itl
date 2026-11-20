@@ -31,7 +31,7 @@
 **Led by:** Tommy
 
 ## 2026-11-20 — Part A: "relevant enough" contributor, and evidence for the evaluation
-**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional `exclude` (the requester) is never suggested, so nobody is pointed to themselves (suggested by Darius in the #18 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
+**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional, repeatable `exclude` (the requester, and anyone already asked under D3-5) is never suggested, so nobody is pointed to themselves or back to someone who could not help (suggested by Darius in the #18 review; made repeatable for the frontend in the #20 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
 **Why:** Architecture §6 asks for a written threshold. A keyword share is readable and does not depend on the number of records, unlike a fixed BM25 score.
 **Alternative rejected:** A fixed BM25 score threshold (its scale changes with the number of records).
 **Led by:** Tommy

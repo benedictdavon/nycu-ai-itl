@@ -15,10 +15,11 @@ router = APIRouter()
 def suggest_contributor(
     conn: ConnDep,
     q: Annotated[str, Query()],
-    exclude: Annotated[str | None, Query()] = None,
+    exclude: Annotated[list[str] | None, Query()] = None,
 ) -> SuggestResponse:
-    """`exclude` is the requester's name, so they are never suggested to themselves."""
+    """`exclude` may repeat: the requester and anyone already asked are never suggested."""
     if not q.strip():
         raise HTTPException(status_code=422, detail="q is required.")
-    name = retrieval.suggest_contributor(conn, q, exclude=(exclude or "").strip() or None)
+    skip = [person.strip() for person in exclude or [] if person.strip()]
+    name = retrieval.suggest_contributor(conn, q, exclude=skip)
     return SuggestResponse(contributor=name)

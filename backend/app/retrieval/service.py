@@ -7,6 +7,7 @@ Owner: Part A. SQLite FTS5 keyword search with the `porter` tokenizer (architect
 import re
 import sqlite3
 from collections import defaultdict
+from collections.abc import Collection
 
 from app import db
 from app.models import Hit, Record
@@ -54,7 +55,7 @@ def search(conn: sqlite3.Connection, query: str, k: int = 5) -> list[Hit]:
 
 
 def suggest_contributor(
-    conn: sqlite3.Connection, query: str, exclude: str | None = None
+    conn: sqlite3.Connection, query: str, exclude: str | Collection[str] = ()
 ) -> str | None:
     """The contributor with the most relevant confirmed records (D3-3).
 
@@ -63,11 +64,13 @@ def suggest_contributor(
     4 or 5. Each counted record adds its search score to each of its contributors, and the
     highest total wins. None if no record counts.
 
-    `exclude` (usually the requester) is never suggested, so nobody is pointed to themselves.
+    Names in `exclude` are never suggested: the requester, so nobody is pointed to themselves,
+    and anyone already asked about this question (D3-5). One name may be passed as a string.
     """
     words = keywords(query)
     if not words:
         return None
+    skip = {exclude} if isinstance(exclude, str) else set(exclude)
     needed = len(words) // 2 + 1
     matched: dict[int, int] = defaultdict(int)
     for word in words:
@@ -78,6 +81,6 @@ def suggest_contributor(
     for hit in search(conn, query, k=SUGGEST_POOL):
         if matched[hit.record.id] >= needed:
             for name in hit.record.contributors:
-                if name != exclude:
+                if name not in skip:
                     totals[name] += hit.score
     return max(totals, key=lambda name: totals[name]) if totals else None
