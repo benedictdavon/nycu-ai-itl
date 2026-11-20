@@ -5,8 +5,7 @@ Fake LLM and stub encoder, decoder and search. All names and records are made up
 
 from fastapi.testclient import TestClient
 
-from app import llm
-from app.models import Answer, RecordDraft
+from app.models import RecordDraft
 
 ALEX = "Alex Chen"
 BEA = "Bea Lin"
@@ -39,12 +38,7 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     assert view["info"]["text"] == TEXT
     assert view["record"]["troubleshooting"] == edited["troubleshooting"]
 
-    # 3. Bea asks; the (fake) model cites Alex's record.
-    llm.reset_llm()
-    fake = llm.get_llm()
-    assert isinstance(fake, llm.FakeClient)
-    reply = Answer(kind="answered", text="Doubled the wash.", cited_record_ids=[record_id])
-    fake.queue(reply.model_dump_json())
+    # 3. Bea asks; the fake LLM cites the top hit, Alex's record.
     asked = client.post("/api/ask", json={"question": "strain X transformation", "requester": BEA})
     assert asked.json()["answer"]["kind"] == "answered"
     assert [source["id"] for source in asked.json()["sources"]] == [record_id]
@@ -53,7 +47,6 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     unknown = client.post("/api/ask", json={"question": "zebrafish injection", "requester": BEA})
     assert unknown.json()["answer"]["kind"] == "insufficient"
     assert unknown.json()["sources"] == []
-    llm.reset_llm()
 
 
 def test_drafts_are_not_searchable(client: TestClient) -> None:

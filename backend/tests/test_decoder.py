@@ -50,16 +50,24 @@ def test_answer_with_no_valid_citation_becomes_insufficient() -> None:
         assert checked.uncertainties == ["u", NOT_CITED]
 
 
-def test_insufficient_stays_insufficient() -> None:
-    draft = Answer(kind="insufficient", text="No record.", uncertainties=["Nothing matches."])
-    assert check_citations(draft, HITS) == draft
+def test_insufficient_never_carries_citations() -> None:
+    draft = Answer(
+        kind="insufficient",
+        text="No record.",
+        cited_record_ids=[1],
+        contributors=["Alex Chen"],
+        uncertainties=["Nothing matches."],
+    )
+    checked = check_citations(draft, HITS)
+    assert checked.kind == "insufficient"
+    assert checked.cited_record_ids == [] and checked.contributors == []
+    assert checked.uncertainties == ["Nothing matches."]
 
 
 # ---- answer(): prompt building and the model call (fake LLM) ----
 
 
 def _fake() -> llm.FakeClient:
-    llm.reset_llm()
     client = llm.get_llm()
     assert isinstance(client, llm.FakeClient)
     return client
@@ -90,3 +98,11 @@ def test_hint_mode_adds_the_hint_instructions() -> None:
     fake.queue(Answer(kind="insufficient", text="x").model_dump_json())
     answer("q", HITS, hint_mode=True)
     assert "Hint mode is on" in fake.calls[0][0]
+
+
+def test_fake_backend_cites_the_top_hit_when_nothing_is_queued() -> None:
+    _fake()
+    result = answer("anything", HITS, hint_mode=False)
+    assert result.kind == "answered"
+    assert result.cited_record_ids == [1]
+    assert result.contributors == ["Alex Chen"]

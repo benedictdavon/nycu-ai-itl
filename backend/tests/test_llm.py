@@ -76,3 +76,9 @@ def test_chat_json_validates(fake: llm.FakeClient) -> None:
     with pytest.raises(llm.LLMError):
         llm.chat_json("sys", "user", Pair)
     assert [call[2] for call in fake.calls] == [Pair, Pair]
+
+
+def test_fake_reply_is_used_only_when_nothing_is_queued(fake: llm.FakeClient) -> None:
+    assert llm.chat_json("sys", "user", Pair, fake_reply=Pair(a=7)) == Pair(a=7)
+    fake.queue('{"a": 3}')
+    assert llm.chat_json("sys", "user", Pair, fake_reply=Pair(a=7)) == Pair(a=3)

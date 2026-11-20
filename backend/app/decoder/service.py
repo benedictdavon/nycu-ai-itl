@@ -18,8 +18,11 @@ def check_citations(draft: Answer, hits: list[Hit]) -> Answer:
 
     Cited IDs that were not in `hits` are dropped (duplicates too, keeping order), and
     `contributors` is recomputed from the cited records, not taken from the model. An
-    `answered` answer with no valid citation left becomes `insufficient`.
+    `answered` answer with no valid citation left becomes `insufficient`, and an
+    `insufficient` answer never carries citations.
     """
+    if draft.kind == "insufficient":
+        return draft.model_copy(update={"cited_record_ids": [], "contributors": []})
     by_id = {hit.record.id: hit.record for hit in hits}
     cited = list(dict.fromkeys(i for i in draft.cited_record_ids if i in by_id))
     if draft.kind == "answered" and not cited:
@@ -60,4 +63,11 @@ def answer(question: str, hits: list[Hit], hint_mode: bool) -> Answer:
         system += (PROMPTS / "hint.md").read_text(encoding="utf-8")
     records = "\n\n".join(_format_record(hit.record) for hit in hits)
     user = f"Question: {question}\n\nRecords:\n\n{records}"
-    return check_citations(chat_json(system, user, Answer), hits)
+    # Without a model (LLM_BACKEND=fake), cite the top hit so the API and UI still work.
+    top = hits[0].record
+    fake = Answer(
+        kind="answered",
+        text=f"[Fake LLM] See **{top.procedure}**.",
+        cited_record_ids=[top.id],
+    )
+    return check_citations(chat_json(system, user, Answer, fake_reply=fake), hits)
