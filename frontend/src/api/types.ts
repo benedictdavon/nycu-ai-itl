@@ -105,6 +105,6 @@ export type DiscussionCreate = {
 
 export type Health = {
   status: "ok";
-  llm_backend: "fake" | "ollama";
+  llm_backend: "fake" | "llama_server";
   llm_model: string;
 };
