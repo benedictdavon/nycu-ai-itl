@@ -88,10 +88,20 @@ class FakeClient:
     def queue(self, *replies: str) -> None:
         self._replies.extend(replies)
 
-    def chat(self, system: str, user: str, *, schema: type[BaseModel] | None = None) -> str:
+    def chat(
+        self,
+        system: str,
+        user: str,
+        *,
+        schema: type[BaseModel] | None = None,
+        default: str | None = None,
+    ) -> str:
+        """The next queued reply; else `default`; else a placeholder."""
         self.calls.append((system, user, schema))
         if self._replies:
             return self._replies.popleft()
+        if default is not None:
+            return default
         return "{}" if schema is not None else "[fake LLM reply]"
 
 
@@ -121,9 +131,20 @@ def reset_llm() -> None:
     _client = None
 
 
-def chat_json[T: BaseModel](system: str, user: str, schema: type[T]) -> T:
-    """Ask for JSON in the shape of `schema` and validate it. Raises LLMError if invalid."""
-    raw = get_llm().chat(system, user, schema=schema)
+def chat_json[T: BaseModel](
+    system: str, user: str, schema: type[T], *, fake_reply: T | None = None
+) -> T:
+    """Ask for JSON in the shape of `schema` and validate it. Raises LLMError if invalid.
+
+    `fake_reply` is what LLM_BACKEND=fake returns when no test queued a reply, so the API
+    still works end to end without a model (architecture.md §3).
+    """
+    client = get_llm()
+    if isinstance(client, FakeClient):
+        default = fake_reply.model_dump_json() if fake_reply is not None else None
+        raw = client.chat(system, user, schema=schema, default=default)
+    else:
+        raw = client.chat(system, user, schema=schema)
     try:
         return schema.model_validate_json(raw)
     except ValidationError as exc:
