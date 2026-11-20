@@ -114,6 +114,12 @@ export default function AskScreen() {
       const response = await ask({ question: text, requester: me, hint_mode: hintMode });
       showResult(text, hintMode, response);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 422) {
+        // The server rejected the question: show the field message, with the input kept.
+        setPhase("idle");
+        setQuestionError("Type at least 3 characters.");
+        return;
+      }
       setPhase(err instanceof ApiError && err.status === 503 ? "unreachable" : "failed");
     }
   }

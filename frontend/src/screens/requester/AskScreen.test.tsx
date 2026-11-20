@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ask, getMembers, getRecord, listRecords, suggestContributor } from "../../api/client";
+import { ApiError, ask, getMembers, getRecord, listRecords, suggestContributor } from "../../api/client";
 import { renderApp } from "../../test/renderApp";
 import { answered, INFO, insufficient, MEMBERS, ME, SOURCE } from "./fixtures";
 
@@ -31,6 +31,23 @@ beforeEach(() => {
   vi.mocked(getMembers).mockResolvedValue(MEMBERS);
   vi.mocked(listRecords).mockResolvedValue([]);
   vi.mocked(getRecord).mockResolvedValue({ record: SOURCE, info: INFO });
+});
+
+describe("Ask: server validation", () => {
+  it("shows a 422 from the server as the question's field message, and keeps the input", async () => {
+    const user = userEvent.setup();
+    vi.mocked(ask).mockRejectedValueOnce(
+      new ApiError(422, [{ loc: ["body", "question"], msg: "too short" }]),
+    );
+    renderApp("/ask");
+
+    await askQuestion(user);
+
+    const message = await screen.findByText("Type at least 3 characters.");
+    expect(message).toHaveAttribute("role", "alert");
+    expect(screen.queryByText("Couldn't get an answer")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("What do you need to know?")).toHaveValue(QUESTION);
+  });
 });
 
 describe("Ask: hints", () => {

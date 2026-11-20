@@ -73,6 +73,11 @@ export default function FollowUpScreen() {
       },
       (err: unknown) => {
         setPending(false);
+        if (err instanceof ApiError && err.status === 422) {
+          // The server rejected the answer: show the field message, with the input kept.
+          setAnswerError("Type an answer, or skip the question.");
+          return;
+        }
         setFailure(err instanceof ApiError && err.status === 503 ? { kind: "model" } : { kind: "other" });
       },
     );

@@ -110,6 +110,29 @@ describe("Follow-up question", () => {
     expect(writes(calls)).toEqual([]);
   });
 
+  it("shows a 422 from the server as the answer's field message, and keeps the input", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubFetch((call) => {
+      if (call.method === "GET" && call.path === "/api/infos/1") {
+        return jsonResponse(200, questionState([], "Did you change the recovery step?"));
+      }
+      if (call.method === "POST" && call.path === "/api/infos/1/follow-ups") {
+        return errorResponse(422, [{ loc: ["body", "answer"], msg: "too short" }]);
+      }
+      return errorResponse(404);
+    });
+    renderAt();
+
+    await user.type(await screen.findByLabelText("Your answer"), "No");
+    await user.click(screen.getByRole("button", { name: "Send answer" }));
+
+    const message = await screen.findByText("Type an answer, or skip the question.");
+    expect(message).toHaveAttribute("role", "alert");
+    expect(screen.queryByText("Couldn't send your answer")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Your answer")).toHaveValue("No");
+  });
+
   it("shows Couldn't load this question with a way back to To review", async () => {
     localStorage.setItem("labknow.me", "Alex Chen");
     stubFetch(() => errorResponse(404));
