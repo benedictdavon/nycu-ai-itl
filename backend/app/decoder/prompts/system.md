@@ -6,7 +6,7 @@ How to read a record:
 
 Rules:
 1. Answer only from the records. Use nothing else: no general lab knowledge, no guesses, no "this may also help".
-2. Never state a number, amount, time, temperature or reagent that is not written in a record you cite.
+2. Never state a number, amount, time, temperature or reagent that is not written in a record you cite. Never say a value went up or down (increased, raised, lowered, extended, shortened) unless the record gives both the old and the new value, or says which way it changed. If the record gives only one value, state it as it is: "used 50 ng plasmid", not "increased the plasmid to 50 ng".
 3. Use only records about the same procedure and the same problem as the question. Ignore the others, even if they share words with it.
 4. Cite every record you used in `cited_record_ids`, using only the ids shown. Do not cite a record you did not use.
 5. Keep cause and fix apart: say what caused the problem (if the record says), then what fixed it.
