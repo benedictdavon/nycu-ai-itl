@@ -44,14 +44,14 @@ Make the key file once with `mkdir -p ~/.config/labknow && (umask 077; openssl r
 ```sh
 CUDA_VISIBLE_DEVICES=1 ~/llama.cpp/build/bin/llama-server \
   -m ~/models/Qwen3-4B-Q8_0.gguf \
-  --jinja -ngl 99 -c 8192 -np 2 --sleep-idle-seconds 600 \
+  --jinja -ngl 99 -c 16384 -np 2 --sleep-idle-seconds 600 \
   --host <tailscale-ip> --port 8080 --api-key-file ~/.config/labknow/llm_api_key
 ```
 
 - `--api-key-file`, not `--api-key`: on a shared machine, every user can read command-line arguments with `ps`.
 - `--jinja` is needed so the app can switch Qwen3 thinking off.
-- `-c 8192 -np 2`: two requests at a time, and the context is split between them, so each request (prompt and reply together) gets **4096 tokens**. The decoder needs about 2000. A long upload sent to the encoder may need `-np 1` or a larger `-c`.
-- `--sleep-idle-seconds 600`: after 10 minutes with no request, the model is unloaded and the GPU memory freed (about 5.9 GB down to 0.6 GB). The next request reloads it and waits, which added under 1 s in our test. `/health` stays 200 while asleep and does not wake it. Before a demo, send one request a minute ahead.
+- `-c 16384 -np 2`: two requests at a time, and the context is split between them, so each request (prompt and reply together) gets **8192 tokens**: about 2000 for the decoder, and room for a long upload sent to the encoder. With `-c 8192` it was 4096 each; the extra context costs about 1.2 GB.
+- `--sleep-idle-seconds 600`: after 10 minutes with no request, the model is unloaded and the GPU memory freed (about 7 GB down to 0.6 GB). The next request reloads it and waits, which added under 1 s in our test. `/health` stays 200 while asleep and does not wake it. Before a demo, send one request a minute ahead.
 - `--host`: the Tailscale IP, or `127.0.0.1` when running locally, never `0.0.0.0`.
 
 To keep it running, use a systemd **user** service (no admin rights needed). Put this in `~/.config/systemd/user/llama-server.service`:
@@ -63,7 +63,7 @@ After=network-online.target
 
 [Service]
 Environment=CUDA_VISIBLE_DEVICES=1
-ExecStart=%h/llama.cpp/build/bin/llama-server -m %h/models/Qwen3-4B-Q8_0.gguf --jinja -ngl 99 -c 8192 -np 2 --sleep-idle-seconds 600 --host <tailscale-ip> --port 8080 --api-key-file %h/.config/labknow/llm_api_key
+ExecStart=%h/llama.cpp/build/bin/llama-server -m %h/models/Qwen3-4B-Q8_0.gguf --jinja -ngl 99 -c 16384 -np 2 --sleep-idle-seconds 600 --host <tailscale-ip> --port 8080 --api-key-file %h/.config/labknow/llm_api_key
 Restart=always
 RestartSec=10
 
