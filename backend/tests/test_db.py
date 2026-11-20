@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -63,3 +64,14 @@ def test_insert_ask_logs_question_and_answer(conn: sqlite3.Connection) -> None:
     assert (row["requester"], row["question"], row["hint_mode"]) == ("Bea Lin", "Why?", 1)
     assert json.loads(row["hit_ids"]) == [3, 1]
     assert Answer.model_validate_json(row["answer"]) == answer
+
+
+def test_old_database_is_refused() -> None:
+    old = db.connect(Path(":memory:"))
+    old.execute(
+        "CREATE TABLE records (id INTEGER PRIMARY KEY, info_id INTEGER, status TEXT, data TEXT,"
+        " confirmed_by TEXT)"
+    )
+    with pytest.raises(db.OutdatedDatabaseError, match="Delete it"):
+        db.init_db(old)
+    old.close()

@@ -31,13 +31,13 @@
 **Led by:** Tommy
 
 ## 2026-11-20 — Part A: "relevant enough" contributor, and evidence for the evaluation
-**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
+**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional `exclude` (the requester) is never suggested, so nobody is pointed to themselves (suggested by Darius in the #18 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
 **Why:** Architecture §6 asks for a written threshold. A keyword share is readable and does not depend on the number of records, unlike a fixed BM25 score.
 **Alternative rejected:** A fixed BM25 score threshold (its scale changes with the number of records).
 **Led by:** Tommy
 
 ## 2026-11-20 — Merge plan for Nov 21 (CP2 item 10) — proposal, to be agreed
-**What:** On merge day, the steward (李原誌) merges in dependency order, and each PR is rebased on the current `main` and passes `ruff` and `pytest` before it is merged:
+**What:** On merge day, the steward (李原誌) merges in dependency order, and each PR is brought up to date with the current `main` (merge `main` into the branch, which avoids force-pushing shared branches, or rebase) and passes `ruff` and `pytest` before it is merged:
 1. Any `models.py` change, reviewed by every owner (none planned).
 2. Shared fixes first, for example `llm.py` (#16) and the fake-LLM and test-settings fixes asked for on #15, so every later PR is tested the same way.
 3. Part A PRs (search, then suggestion and seed). Parts B and C use only `search()` and `index()`, whose signatures do not change.

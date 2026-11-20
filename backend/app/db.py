@@ -62,9 +62,24 @@ def connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+class OutdatedDatabaseError(RuntimeError):
+    """The database file was made by an older version of the app. There is no migration."""
+
+
 def init_db(conn: sqlite3.Connection) -> None:
-    """Create the tables if they do not exist (idempotent)."""
+    """Create the tables if they do not exist (idempotent).
+
+    Raises OutdatedDatabaseError for a database made before `records.first_draft` existed:
+    CREATE TABLE IF NOT EXISTS does not add columns, and its confirmed records would also be
+    missing from the search index.
+    """
     conn.executescript(SCHEMA)
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(records)")}
+    if "first_draft" not in columns:
+        raise OutdatedDatabaseError(
+            "The database file was made by an older version of LabKnow. Delete it"
+            " (by default data/app.sqlite3; it holds only test data) and start again."
+        )
 
 
 def _info_from_row(row: sqlite3.Row) -> Info:

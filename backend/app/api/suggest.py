@@ -12,7 +12,13 @@ router = APIRouter()
 
 
 @router.get("/suggest-contributor", response_model=SuggestResponse)
-def suggest_contributor(conn: ConnDep, q: Annotated[str, Query()]) -> SuggestResponse:
+def suggest_contributor(
+    conn: ConnDep,
+    q: Annotated[str, Query()],
+    exclude: Annotated[str | None, Query()] = None,
+) -> SuggestResponse:
+    """`exclude` is the requester's name, so they are never suggested to themselves."""
     if not q.strip():
         raise HTTPException(status_code=422, detail="q is required.")
-    return SuggestResponse(contributor=retrieval.suggest_contributor(conn, q))
+    name = retrieval.suggest_contributor(conn, q, exclude=(exclude or "").strip() or None)
+    return SuggestResponse(contributor=name)

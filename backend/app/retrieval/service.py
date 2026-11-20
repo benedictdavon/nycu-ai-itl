@@ -53,13 +53,17 @@ def search(conn: sqlite3.Connection, query: str, k: int = 5) -> list[Hit]:
     ]
 
 
-def suggest_contributor(conn: sqlite3.Connection, query: str) -> str | None:
+def suggest_contributor(
+    conn: sqlite3.Connection, query: str, exclude: str | None = None
+) -> str | None:
     """The contributor with the most relevant confirmed records (D3-3).
 
     "Relevant enough" (the D3-3 threshold): a record counts only if it contains more than half
     of the query's keywords (stopwords removed, words stemmed), so 1 of 1, 2 of 2, 2 of 3, 3 of
     4 or 5. Each counted record adds its search score to each of its contributors, and the
     highest total wins. None if no record counts.
+
+    `exclude` (usually the requester) is never suggested, so nobody is pointed to themselves.
     """
     words = keywords(query)
     if not words:
@@ -74,5 +78,6 @@ def suggest_contributor(conn: sqlite3.Connection, query: str) -> str | None:
     for hit in search(conn, query, k=SUGGEST_POOL):
         if matched[hit.record.id] >= needed:
             for name in hit.record.contributors:
-                totals[name] += hit.score
+                if name != exclude:
+                    totals[name] += hit.score
     return max(totals, key=lambda name: totals[name]) if totals else None

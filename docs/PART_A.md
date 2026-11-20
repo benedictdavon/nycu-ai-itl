@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Owner** | Tommy |
-| **Doc version** | 1.1, 2026-11-20 (split into two PRs, rebased on `main`) |
-| **Branches** | PR 1 `feat/part-a-fts-search` (search and index), from `main` at `2d23a75`. PR 2 `feat/part-a-suggest-seed` (everything else, this doc included), on top of PR 1. |
+| **Doc version** | 1.2, 2026-11-20 (after Darius's review: `exclude`, old-database check, notes) |
+| **PRs** | #17 `feat/part-a-fts-search` (search and index). #18 `feat/part-a-suggest-seed` (everything else, this doc included), built on #17. Both are up to date with `main` at `40eac0f`. |
 | **Spec** | [03 Interaction Design](cp1/03_interaction_design.md): D1-2, D2-3a, D3-1, D3-3 |
 | **Plan** | [architecture.md](cp2/architecture.md) §3 (interface), §4 (retrieval choice), §6 (Done when) |
 | **API** | [api.md](cp2/api.md) |
@@ -44,7 +44,7 @@ uv run python -c "import sqlite3; c = sqlite3.connect(':memory:'); c.execute('CR
 | Table / column | What it holds | Why |
 |---|---|---|
 | `records_fts` (new) | A full-text index (SQLite FTS5, `porter unicode61` tokenizer) of every **confirmed** record: procedure, based on, changes with their reasons, troubleshooting, project tags, contributors. `rowid` = `records.id`. | Search (D3-1). Drafts are never in it, so they cannot be found (D2-3a). |
-| `records.first_draft` (new column) | The encoder's draft as it was first stored. Edits on review change `data`, never this. | Evidence for the evaluation: how many corrections a contributor made, and whether the encoder invented details (04 §3). |
+| `records.first_draft` (new column) | The encoder's draft as it was first stored. Edits on review change `data`, never this. | Evidence for the evaluation: how many corrections a contributor made, and whether the encoder invented details (04 §3). Seeded records have `first_draft` equal to the answer key, so leave them out of those numbers. |
 | `asks` (new) | Every question: requester, question, hint mode, the ids search returned, and the answer. | Evidence for the evaluation (04 §3). **Not filled yet**, see §5. |
 
 ### Functions
@@ -67,7 +67,7 @@ uv run python -c "import sqlite3; c = sqlite3.connect(':memory:'); c.execute('CR
 |---|---|
 | `index(conn, record)` | Makes a just-confirmed record searchable. Already called by `POST /api/records/{id}/confirm`. |
 | `search(conn, query, k=5) -> list[Hit]` | Confirmed records that share a keyword with the question, best first, at most `k`. Used by `POST /api/ask`. |
-| `suggest_contributor(conn, query) -> str \| None` | The most relevant contributor, or `None` if no record is relevant enough (D3-3). |
+| `suggest_contributor(conn, query, exclude=None) -> str \| None` | The most relevant contributor other than `exclude` (the requester), or `None` if no record is relevant enough (D3-3). |
 | `keywords(query)` | The question's words, lower case, without stopwords and repeats. |
 
 `backend/app/retrieval/seed.py`: `seed(conn)` loads the six made-up records in `samples/records/` as confirmed, searchable records, skipping any already loaded. Run it with `uv run python -m app.retrieval.seed`.
@@ -76,7 +76,7 @@ uv run python -c "import sqlite3; c = sqlite3.connect(':memory:'); c.execute('CR
 
 | Route | In | Out | Errors |
 |---|---|---|---|
-| `GET /api/suggest-contributor?q=...` (new, `backend/app/api/suggest.py`) | `q`: the question | `{"contributor": "Alex Chen"}`, or `{"contributor": null}` when nobody is relevant enough | 422 if `q` is missing or blank |
+| `GET /api/suggest-contributor?q=...&exclude=...` (new, `backend/app/api/suggest.py`) | `q`: the question. `exclude` (optional): the requester's name, who is never suggested to themselves; the frontend should send it. | `{"contributor": "Alex Chen"}`, or `{"contributor": null}` when nobody is relevant enough | 422 if `q` is missing or blank |
 | `POST /api/ask` (existing) | unchanged | unchanged; its `sources` now come from the real search | unchanged |
 
 ### Other files touched
@@ -121,7 +121,7 @@ The Part A list in [architecture.md §6 "Done when"](cp2/architecture.md#done-wh
 | **Keywords, not meaning.** Search needs a shared word, after stemming. | Works when a word is shared: "big protein" finds "150 kDa protein" through "protein". Fails on paraphrase, checked on the samples: "membrane tank" finds nothing, though the Western blot record is about transfer; "cut a band out and purify it" (meaning gel extraction) finds Colony PCR through "band". The decoder must still judge whether the hits answer the question. | The fallback in architecture §4: embeddings from a local model. |
 | **The raw upload text is not searched**, only the confirmed `M`. | Something the contributor left out of `M` cannot be found, even if it is in the original file. | Intended: only reviewed content is searchable (D2-3a). The decoder can still show the original through the record's `info`. |
 | **Confirm and index are two steps** (`api/records.py:59` and `:62`, scaffold code). | If indexing failed after the confirm was saved, the record would be confirmed but not searchable, and nothing re-indexes it. It has not happened in tests; both are local SQLite writes. | Add a re-index command, or one transaction for both, if it ever happens. |
-| **Schema change without migration.** `records.first_draft` is new and required. | A database made with the scaffold fails on new uploads (`no column named first_draft`). | Delete `data/app.sqlite3` once. Every `data/` file is test data. |
+| **Schema change without migration.** `records.first_draft` is new and required. | A database made before Part A PR 2 is refused at start-up with `OutdatedDatabaseError` and a message to delete the file. Without that check, uploads would fail with a 500, and records confirmed before PR 1 would silently be missing from search (they were never indexed). | Delete `data/app.sqlite3` once. Every `data/` file is test data. |
 | **The threshold was tuned on six samples.** | "More than half of the keywords" may be too strict for long questions, or too loose for short ones, on real records. | Watch the user tests. The rule is one line in `suggest_contributor`. |
 | **Long questions.** | Not a problem: a 3,000-word question takes about 0.1 s for search and suggestion on the samples. | — |
 
@@ -132,7 +132,7 @@ The Part A list in [architecture.md §6 "Done when"](cp2/architecture.md#done-wh
 | Fill the `asks` table | Part C (Darius), in `api/ask.py` | After `answer = decoder.answer(...)`, add `db.insert_ask(conn, requester=body.requester, question=body.question, hint_mode=body.hint_mode, hit_ids=[h.record.id for h in hits], answer=answer)`. Part A does not edit Part C's file. |
 | The `main.py` router line | Scaffold (Benedict) | Please confirm in the PR review. |
 | Merge plan | Everyone | The entry in `DECISIONS.md` is a proposal until the team agrees. |
-| Old database files | Anyone who ran the scaffold | `records` has a new required column. Delete `data/app.sqlite3` once; it is rebuilt on the next start. |
+| Old database files | Anyone who ran the scaffold or #17 alone, and the demo laptop | The server refuses to start with a message to delete the file. Delete `data/app.sqlite3` once; it is rebuilt on the next start. |
 
 ## 6. Automated tests
 
@@ -144,7 +144,7 @@ uv run ruff check . && uv run ruff format --check .
 uv run pytest -q
 ```
 
-Expected on PR 2: `All checks passed!`, `28 files already formatted`, and `26 passed, 1 warning` (PR 1 alone: `26 files`, `21 passed`). They also pass with `LLM_BACKEND=llama_server` in `.env`, because Part A's tests never call the LLM. The warning (`StarletteDeprecationWarning` about `httpx`) comes from the scaffold's test client, not from Part A.
+Expected on #18: `All checks passed!`, `28 files already formatted`, and `29 passed, 1 warning` (#17 alone: `26 files`, `22 passed`). They also pass with `LLM_BACKEND=llama_server` in `.env`, because Part A's tests never call the LLM. The warning (`StarletteDeprecationWarning` about `httpx`) comes from the scaffold's test client, not from Part A.
 
 Tests for Part A. All use an in-memory database or a temporary file, the fake LLM and no network:
 
@@ -162,7 +162,9 @@ Tests for Part A. All use an in-memory database or a temporary file, the fake LL
 | `test_retrieval.py::test_seed_loads_samples_once` | Six samples load as confirmed and searchable; a second run adds none |
 | `test_db.py::test_first_draft_is_kept_after_edits` | An edit changes the record but not its first draft |
 | `test_db.py::test_insert_ask_logs_question_and_answer` | One `asks` row with every field |
-| `test_api_flow.py::test_paste_review_confirm_ask` step 5 | `GET /api/suggest-contributor` over HTTP: a name, `null`, and 422 for a blank `q` |
+| `test_retrieval.py::test_suggest_contributor_excludes_the_requester` | The excluded name is never suggested; the next best contributor is |
+| `test_db.py::test_old_database_is_refused` | A database without `records.first_draft` raises `OutdatedDatabaseError` |
+| `test_api_flow.py::test_paste_review_confirm_ask` step 5 | `GET /api/suggest-contributor` over HTTP: a name, `null` when the only match is excluded, `null` for an unrelated question, and 422 for a blank `q` |
 
 To run only Part A's tests: `uv run pytest -q tests/test_retrieval.py tests/test_db.py`.
 
@@ -172,7 +174,7 @@ This walks through the 03 flow as real users would: a requester asks questions, 
 
 The encoder and decoder are still stubs (Parts B and C). So **ignore the answer's `text`**; look at `answer.kind`, `sources` and `contributors`, which come from Part A's search.
 
-**The decoder PR (#15) changes the `/api/ask` steps.** These steps were checked on `main` at `2d23a75`, where the decoder is still a stub. Once #15 is merged, the decoder calls the LLM. With the default `LLM_BACKEND=fake`, a question that has search hits then returns **503** (`The model did not return valid Answer JSON`), until the fake-LLM fix asked for on #15 lands. Until then, either check on `main` before #15, or set `LLM_BACKEND=llama_server` in `.env` (see `backend/README.md`) and judge `sources`, not the wording. Steps that use only `/api/suggest-contributor`, `/api/records` and the database work either way.
+**With or without the decoder PR (#15).** Before #15 the decoder is a stub; after #15, with `LLM_BACKEND=fake`, it cites the top search hit and its text starts with `[Fake LLM]`. Either way, `answer.kind` and `sources` come out as written below. With `LLM_BACKEND=llama_server` in `.env`, the real model writes the text and decides what to cite, so judge `sources` against the expected record, not the wording.
 
 ### Step 0: Setup
 
@@ -256,6 +258,13 @@ Chris has read Alex's record but wants to know more. `GET /api/suggest-contribut
 | `Why did the cells clump after washing?` | [ ] `{"contributor": "Alex Chen"}` |
 | `Who knows about low yield in a miniprep?` | [ ] `{"contributor": "Chris Wu"}` |
 | `zebrafish transformation` | [ ] `{"contributor": null}`: only 1 of 2 keywords matches a record, not more than half |
+
+Chris is the one asking, so he should not be pointed to himself. Repeat with `exclude`:
+
+| `q` | `exclude` | Expected |
+|---|---|---|
+| `Who knows about low yield in a miniprep?` | `Chris Wu` | [ ] `{"contributor": null}`: Chris has the only miniprep record |
+| `Why did the cells clump after washing?` | `Chris Wu` | [ ] `{"contributor": "Alex Chen"}`: excluding someone else changes nothing |
 
 ### Step 5: A contributor uploads a new record; it is not searchable yet
 
@@ -392,8 +401,7 @@ rm ../data/part-a-check.sqlite3                 # Git Bash, macOS, Linux, from b
 | Symptom | Cause and fix |
 |---|---|
 | The seed says `Added 0` the first time | The database already has the samples. Delete `data/part-a-check.sqlite3` and start again. |
-| `table records has no column named first_draft` | The server is using a database made before Part A. Check that `DB_PATH` is set in that terminal, or delete the old file. |
+| The server stops at start-up with `OutdatedDatabaseError: The database file was made by an older version of LabKnow` | The database was made before Part A PR 2. Delete that file (check which one `DB_PATH` points to) and start again. |
 | Record ids are not 7 | The database was not empty. Use the ids from your responses, or start from a fresh file. |
 | `sqlite3.OperationalError: no such module: fts5` | Your Python's SQLite has no FTS5. Use the Python that uv installs (`uv python install 3.12`, then `uv sync`), and run the FTS5 check in §0. |
-| `/api/ask` returns 503 `The model did not return valid Answer JSON: {}` | The decoder from #15 is merged and `LLM_BACKEND=fake`. See the note at the start of §7. |
 | `address already in use` | Another server is on port 8000. Stop it, or use `--port 8001` and open `http://127.0.0.1:8001/docs`. |

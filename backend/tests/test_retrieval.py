@@ -83,6 +83,15 @@ def test_suggest_contributor_none_when_not_relevant_enough(conn: sqlite3.Connect
     assert retrieval.suggest_contributor(conn, "Who can help?") is None
 
 
+def test_suggest_contributor_excludes_the_requester(conn: sqlite3.Connection) -> None:
+    _add(conn, TRANSFORMATION)
+    question = "strain X transformation"
+    assert retrieval.suggest_contributor(conn, question, exclude="Alex Chen") is None
+    _add(conn, RecordDraft(procedure="Colony PCR on strain X transformants", contributors=["Bea"]))
+    assert retrieval.suggest_contributor(conn, question, exclude="Alex Chen") == "Bea"
+    assert retrieval.suggest_contributor(conn, question, exclude="Bea") == "Alex Chen"
+
+
 def test_seed_loads_samples_once(conn: sqlite3.Connection) -> None:
     assert seed(conn) == 6
     assert seed(conn) == 0
