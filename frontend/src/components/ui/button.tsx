@@ -10,10 +10,10 @@ export const buttonVariants = cva(
         primary:
           "min-h-12 bg-coomassie-blue px-[22px] text-paper enabled:hover:bg-coomassie-deep",
         secondary:
-          "min-h-12 border border-field-edge bg-paper px-5 text-bench-ink enabled:hover:bg-paper-sunk",
-        text: "min-h-11 bg-transparent px-3 text-coomassie-blue enabled:hover:bg-paper-sunk",
+          "min-h-12 border border-field-edge bg-paper px-5 text-bench-ink enabled:hover:border-ink-secondary enabled:hover:bg-bench-grey",
+        text: "min-h-11 underline-offset-4 bg-transparent px-3 text-coomassie-blue enabled:hover:bg-sage-chip enabled:hover:underline",
         "destructive-text":
-          "min-h-11 bg-transparent px-3 text-alert-ink enabled:hover:bg-alert-wash",
+          "min-h-11 underline-offset-4 bg-transparent px-3 text-alert-ink enabled:hover:bg-alert-wash enabled:hover:underline",
       },
     },
     defaultVariants: {

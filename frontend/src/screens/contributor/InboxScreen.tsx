@@ -127,7 +127,7 @@ export default function InboxScreen() {
               <li key={record.id}>
                 <Link
                   to={`/review/${record.id}`}
-                  className="block rounded-lg border border-hairline bg-paper p-5 shadow-rest transition-shadow duration-quick ease-out hover:shadow-lift focus-visible:shadow-lift sm:px-6 sm:py-5"
+                  className="block rounded-lg border border-hairline bg-paper p-5 shadow-rest transition-[border-color,box-shadow] duration-quick ease-out hover:border-field-edge hover:shadow-lift focus-visible:border-field-edge focus-visible:shadow-lift sm:px-6 sm:py-5"
                 >
                   {origin && OriginIcon && (
                     <p className="flex items-center gap-2 type-label text-ink-secondary">

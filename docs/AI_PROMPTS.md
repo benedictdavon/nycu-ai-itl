@@ -76,3 +76,55 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
     3. Change rows are all named "a change from the SOP" in the guard message. When the change has text, name it like `the change "Eluted in 30 uL water instead of 50 uL"` (use `change.what` at the time the row opens). Keep "a new change" (or the current wording) when the text is empty (a just-added change). Update or add one test that checks the change-row name in the message.
     
     No other changes.
+
+### Phase 2: polish (P2)
+
+#### Brief to the implementer
+
+    Phase 2 of 3: polish (P2). Same rules as Phase 1: worktree C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file (and its test) before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
+    
+    Design rules that apply (frontend/DESIGN.md):
+    - Two Meanings Rule: Coomassie Blue (and its wash) only means "confirmed, cited or the main action". Do NOT add blue or coomassie-wash as a hover colour on secondary/text/nav/chip/card elements. (Primary already deepens to coomassie-deep; keep it.)
+    - Use existing colour tokens from `frontend/src/index.css` @theme. Do NOT add a new token unless unavoidable; if you do, add it to both `index.css` and the YAML + Colors section of `frontend/DESIGN.md`.
+    - Respect `prefers-reduced-motion`: hover changes colour/border/shadow only, never transform/translate. (`index.css:163-170` already strips transforms under reduced motion; don't add any movement.)
+    - Transitions use the existing `duration-quick ease-out` (160ms).
+    - Visible 3px Coomassie Blue focus indicator must remain on every control.
+    
+    Measured in the browser now (1920x1080): hover on secondary button, text button, nav item and AddChip only changes background #FFFFFF → #F7F8F8 (paper → paper-sunk, ~1.06:1, invisible). Who-list buttons, inbox rows and interactive Cards only change shadow rest → lift; border stays hairline #E3E7EA.
+    
+    ## 3. Hover states
+    Files: `frontend/src/components/ui/button.tsx:13-14`, `frontend/src/components/Shell.tsx:91` (inactive nav) and `:110` (Switch link), `frontend/src/components/Chip.tsx:68` (AddChip), `frontend/src/screens/WhoScreen.tsx:66`, `frontend/src/screens/contributor/InboxScreen.tsx:130` (and the "Confirmed by you" list items in the same file if they are clickable rows with the same hover), `frontend/src/components/Card.tsx:15` (interactive cards).
+    Make hover clearly visible with existing border/background tokens:
+    - Secondary button: hover → border `ink-secondary` (#3A4452) and background `bench-grey` (#F1F3F2). Keep text bench-ink.
+    - Text button (`variant: "text"`): hover → background `sage-chip` (#EAEEEC) and text underline (`underline underline-offset-4`), text stays coomassie-blue (it already is blue: it's an action). `destructive-text` keeps alert-wash hover, add the same underline for consistency.
+    - Inactive nav item and the Switch link in Shell: hover → background `sage-chip` (instead of paper-sunk). The active item is unchanged.
+    - AddChip: hover → border `ink-secondary` (still dashed) and background `bench-grey`.
+    - Clickable cards/rows (Who list buttons, inbox rows, `Card interactive`): keep shadow rest → lift, and also change border hairline → `field-edge` (#8592A0) on hover (and on focus-visible / focus-within where they already lift). Who's "last used" item keeps its 2px coomassie-blue border on hover. Make the transition cover both border-color and box-shadow (e.g. `transition-[border-color,box-shadow]`).
+    - The tag/person chip remove buttons (`enabled:hover:bg-rule`) are fine; leave them.
+    - Update the prose in `frontend/DESIGN.md` where hover is described (Buttons "Hover / Focus", Navigation "Inactive: ... hover adds a Paper Sunk fill", Elevation "Interactive cards ... lift a little more on hover", Chips "Add chip") so the spec matches what you built. Keep edits to those sentences.
+    
+    ## 4. Inputs
+    Files: `frontend/src/components/ui/field-styles.ts:9` (shared by Input, Textarea, Select), `frontend/src/components/ui/textarea.tsx`, `frontend/src/index.css:148-156` only if needed.
+    Now: 1px field-edge border, no hover, focus = global `:focus-visible` 3px outline with 2px offset, which draws a double ring with a white gap around the border; native resize grip; no transition.
+    - Hover (not focused, not disabled): border `ink-secondary`. Gap tone (`border-tape-edge`): hover border `tape-ink`.
+    - Focus: a single clean ring with no gap: on `focus-visible`, set `outline-offset: 0` and turn the border coomassie-blue so the 1px border + 3px outline read as one ring (e.g. `focus-visible:outline-offset-0 focus-visible:border-coomassie-blue`). The outline stays 3px coomassie-blue (the global rule provides width/colour). Invalid fields (`aria-invalid:border-alert-red`) keep the red border when focused.
+    - Transition: `transition-[border-color,outline-color] duration-quick ease-out` (or the shorthand that covers those).
+    - Textarea resize: make it grow with its content where supported (`field-sizing: content`, Tailwind v4 `field-sizing-content`), with a minimum of about 3 lines (`min-h-[...]` matching the current rows=3 height ~101px) and a max height (e.g. `max-h-80`) after which it scrolls; keep `resize-y` so browsers without field-sizing still allow manual resize. Do not change any `rows` props at call sites unless needed.
+    - Do not change the Select chevron or the file drop-zone label.
+    
+    ## 5. Tag chips
+    Files: `frontend/src/components/Chip.tsx:8` (TagChip) and `:37` (PersonChip has the same issue), `frontend/src/screens/requester/SourceCards.tsx:50`.
+    - Read-only chips (no remove button) have `pl-3 pr-0.5` (measured 12px/2px): space reserved for a remove button that isn't there. Use symmetric `px-3` when there is no remove button; keep `pl-3 pr-0.5` when there is one. Same for PersonChip when it is neither locked nor removable.
+    - Long tags must not overflow the pill. Now the chip is a fixed `h-9`, so "kanamycin resistance screening" wraps to two lines and spills out of the pill. Use `min-h-9` (instead of `h-9`) plus a little vertical padding (`py-1`) so a wrapped tag stays inside the pill; keep text left-aligned and allow wrapping (`break-words` / `min-w-0`). Chosen over truncation because a `title` tooltip doesn't work on touch.
+    - Make tags quieter in the Sources side card (SourceCards.tsx:50): seven tags currently take four rows. Add a `size?: "default" | "small"` prop to TagChip (small = `min-h-7`, `px-2.5`, `type-body-small` (weight 400), `gap-1.5` between chips at the call site). Use `size="small"` only in SourceCards. Do not change RecordScreen or DraftRows chips.
+    
+    ## Tests
+    - Add or update unit tests only where behaviour changes: TagChip renders symmetric padding classes without a remove button and the remove-variant classes with one, and `size="small"` applies the small classes (a small test file `frontend/src/components/Chip.test.tsx` is fine). Keep all existing tests passing.
+
+#### Fix rounds 1-3
+
+    Fix round 1: In the Sources side card on Ask, the seven tags of record #3 still take 4 rows with `size="small"` chips (the card's text column is only about 214px wide). Replace the TagChip row in `frontend/src/screens/requester/SourceCards.tsx` with a quiet inline text list: one `<ul aria-label="Project tags">` whose items are inline, in `type-body-small text-ink-secondary`, separated by an `aria-hidden` middot; keep `mt-3`; no pills. Remove the now-unused `size` prop and small classes from `TagChip` and its test. Add one sentence to `frontend/DESIGN.md` Chips: in the Sources side card, tags are a plain Ink Secondary list separated by middots. Update/add one test asserting the Sources card lists the tags as text.
+    
+    Fix round 2: At 1920 the tag "pET-28a" breaks at its hyphen across two lines. Wrap each tag's text (not the separator) in `<span className="inline-block max-w-full">{tag}</span>`.
+    
+    Fix round 3: With every tag inline-block, the multi-word tag "kanamycin resistance screening" jumps to its own line and leaves "T7 ·" alone. Apply `inline-block max-w-full` only to tags that contain no space, with a one-line comment: single-word tags such as "pET-28a" must not break at the hyphen, while multi-word tags wrap at their spaces like normal text.

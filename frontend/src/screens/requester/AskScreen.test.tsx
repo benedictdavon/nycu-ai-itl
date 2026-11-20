@@ -72,6 +72,7 @@ describe("Ask: hints", () => {
     expect(ask).toHaveBeenLastCalledWith({ question: QUESTION, requester: ME, hint_mode: false });
     const marker = screen.getByRole("link", { name: "Source 1: Transformation of strain X with plasmid P" });
     expect(marker).toHaveAttribute("href", "/records/1");
+    expect(within(screen.getByRole("list", { name: "Project tags" })).getByText("Project X")).toBeInTheDocument();
   });
 });
 

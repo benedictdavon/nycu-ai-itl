@@ -2,7 +2,6 @@ import { Link } from "react-router";
 import type { Info, LabRecord } from "../../api/types";
 import { Avatar } from "../../components/Avatar";
 import { Card } from "../../components/Card";
-import { TagChip } from "../../components/Chip";
 import { SourceNumber } from "../../components/SourceMarker";
 import { linkClass } from "./linkStyles";
 
@@ -45,11 +44,18 @@ export function SourceCards({
                   <p className="mt-2 type-body-small text-coomassie-blue">Confirmed by {record.confirmed_by}</p>
                 )}
                 {record.project_tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {record.project_tags.map((tag) => (
-                      <TagChip key={tag} label={tag} />
+                  <ul aria-label="Project tags" className="mt-3 type-body-small text-ink-secondary">
+                    {record.project_tags.map((tag, index) => (
+                      <li key={tag} className="inline">
+                        {index > 0 && <span aria-hidden="true"> · </span>}
+                        {/* A single-word tag such as "pET-28a" must not break at its hyphen, while a
+                            multi-word tag wraps at its spaces like normal text. */}
+                        <span className={tag.includes(" ") ? undefined : "inline-block max-w-full"}>
+                          {tag}
+                        </span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
                 {linked ? (
                   <div className="mt-2 flex flex-wrap gap-x-5">

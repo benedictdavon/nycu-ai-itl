@@ -88,7 +88,7 @@ export function Shell() {
                         "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-2 text-center type-label transition-colors duration-quick ease-out sm:px-3.5",
                         active
                           ? "bg-coomassie-wash text-coomassie-blue"
-                          : "text-bench-ink hover:bg-paper-sunk",
+                          : "text-bench-ink hover:bg-sage-chip",
                       )}
                     >
                       {item.label}
@@ -107,7 +107,7 @@ export function Shell() {
 
               <Link
                 to="/who"
-                className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-md px-2 type-label text-bench-ink transition-colors duration-quick ease-out hover:bg-paper-sunk"
+                className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-md px-2 type-label text-bench-ink transition-colors duration-quick ease-out hover:bg-sage-chip"
               >
                 <Avatar name={me} tone="current" size={32} />
                 <span className="sr-only sm:not-sr-only">{me}</span>
