@@ -19,3 +19,7 @@
 **Why:** One protocol for the main server and the fallback, and no extra runtime to install and test. A schema-shaped reply is only a valid shape, so the citation check and question limit stay in code.
 **Alternative rejected:** Keeping Ollama as a second backend (a second API to maintain and test, and the team prefers not to depend on it).
 **Led by:** Darius Lung
+
+## 2026-11-20 — Code steward: Tommy
+**What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
