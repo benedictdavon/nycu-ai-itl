@@ -10,7 +10,7 @@ This file says **how** we build the CP2 prototype. **What** we build is already 
 |---|---|---|
 | Backend | Python 3.12, FastAPI, Pydantic | JSON API under `/api`. |
 | Storage | SQLite (Python's built-in `sqlite3`, no ORM) | One file in `data/`. Full-text search with FTS5 (§4). |
-| LLM | A model server the team hosts itself | Plan (Nov 19): `llama-server` (llama.cpp) with Qwen3-4B on Darius's RTX 4090, reached over Tailscale with an API key, not exposed to the internet. Records go to no outside AI service (04 §5). **The scaffold's client still speaks Ollama's API; Part C switches it (§6).** |
+| LLM | A model server the team hosts itself | Plan (Nov 19): `llama-server` (llama.cpp) with Qwen3-4B on Darius's RTX 4090, reached over Tailscale with an API key, not exposed to the internet. Records go to no outside AI service (04 §5). `app/llm.py` speaks its OpenAI-compatible API. |
 | File reading | Part B chooses (for example `pypdf`, `python-docx`) | PDF, DOCX, TXT/MD. Benchling exports are read by their file type. |
 | Frontend | React, TypeScript, Vite, shadcn/ui (Tailwind) | Built into static files that FastAPI serves, so the demo is one process. Part D builds it. |
 | Tests | `pytest` | Unit tests, plus the prompt test suite (§5). |
@@ -25,7 +25,7 @@ backend/
     models.py        Shared data structures (§3). The contract.        [Scaffold, changes need review]
     main.py          FastAPI app factory                               [Scaffold]
     config.py        Settings from environment variables               [Scaffold]
-    llm.py           Ollama client + fake client for tests             [Scaffold]
+    llm.py           llama-server client + fake client for tests      [Scaffold]
     db.py            SQLite tables (infos, records) and queries        [Scaffold, then Part A]
     api/             HTTP routes, thin: call the services below        [Scaffold, then each part]
     retrieval/       Search over confirmed M (stub)                    [Part A]
@@ -133,7 +133,7 @@ def answer(question: str, hits: list[Hit], hint_mode: bool) -> Answer
 def chat_json(system: str, user: str, schema: type[T]) -> T
 ```
 
-In the scaffold it uses Ollama's `/api/chat` with temperature 0 and asks for JSON in the shape of `schema`. Part C moves it to the OpenAI-compatible `/v1/chat/completions` that `llama-server` serves (Ollama serves it too, so a local Ollama still works as a fallback); the function signature stays the same. `LLM_BACKEND=fake` returns canned replies, so the API and tests work without Ollama. If Ollama fails or the reply is not valid JSON, it raises `LLMError`, which the API returns as HTTP 503. Prompts live as files next to the encoder and decoder, not as strings in code. They are the source for the CP2 prompt documentation card.
+It calls the OpenAI-compatible `/v1/chat/completions` that `llama-server` serves, with temperature 0, thinking switched off (`chat_template_kwargs.enable_thinking=false`, so the server needs `--jinja`), and JSON in the shape of `schema` via `response_format`. A valid shape does not mean the values are right, so the citation check and the question limit stay in code. Any other OpenAI-compatible server works for the fallback. `LLM_BACKEND=fake` returns canned replies, so the API and tests work without a model server. If the server fails or the reply is not valid JSON, it raises `LLMError`, which the API returns as HTTP 503. Prompts live as files next to the encoder and decoder, not as strings in code. They are the source for the CP2 prompt documentation card.
 
 ### HTTP API (`api/`)
 
@@ -170,9 +170,9 @@ Full request and response shapes and error codes: [api.md](api.md).
 | Topic | CP2 choice | If it fails |
 |---|---|---|
 | Model | Qwen3-4B on `llama-server`, on Darius's RTX 4090, if it passes the prompt suite at about 30 seconds or less per reply. Record the choice in `docs/DECISIONS.md` (04 §5 requires this decision before CP2). | Try another model, or shorter prompts. |
-| Model server at the demo | The demo laptop (Benedict's) runs the app and reaches the model server over Tailscale. | If the room's network blocks Tailscale or the server is down, run a small model locally on the demo laptop (RTX 3070 Ti 8 GB) with Ollama. Test this fallback before Nov 23. |
+| Model server at the demo | The demo laptop (Benedict's) runs the app and reaches the model server over Tailscale. | If the room's network blocks Tailscale or the server is down, run a small model locally on the demo laptop (RTX 3070 Ti 8 GB) with a small `llama-server`. Test this fallback before Nov 23. |
 | Language | Test records, prompts and the UI are in English. | — |
-| Retrieval | SQLite FTS5 keyword search over the text of confirmed `M`, with the `porter` tokenizer so "transform" also matches "transformation". | If tests miss paraphrased questions, add embeddings from an Ollama embedding model. |
+| Retrieval | SQLite FTS5 keyword search over the text of confirmed `M`, with the `porter` tokenizer so "transform" also matches "transformation". | If tests miss paraphrased questions, add embeddings from a small embedding model on `llama-server`. |
 | "Enough to answer" rule (open in 03) | `insufficient` if search returns nothing relevant, or the model says the records do not answer the question, or no citation passes the check. | Part C adjusts it and records the rule. |
 | Two people at once | Both use the laptop's address over the local network, each with a different name. | Campus Wi-Fi may block this. Fallback: two browser windows on the demo laptop. |
 
@@ -239,7 +239,7 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 - [ ] At least 5 encoder cases are in the prompt suite, typical and edge (for example an unclear record, or a record with nothing to ask). The encoder part of the prompt card is written.
 
 **C: decoder** (`app/decoder/`, `app/api/ask.py`, `app/llm.py`)
-- [ ] PR 0: `llm.py` talks to `llama-server`'s OpenAI-compatible `/v1/chat/completions` (JSON schema via `response_format`), with settings for the server address and API key in `config.py` and `.env.example`. The tests still pass with `LLM_BACKEND=fake`, and a local Ollama still works. The model server setup is in `backend/README.md`.
+- [x] PR 0: `llm.py` talks to `llama-server`'s OpenAI-compatible `/v1/chat/completions` (JSON schema via `response_format`), with settings for the server address and API key in `config.py` and `.env.example`. The tests still pass with `LLM_BACKEND=fake`. The model server setup is in `backend/README.md`.
 - [ ] PR 1: a decoder prompt file exists, and `answer()` calls `llm.chat_json`. It cites only records from the hits and names their contributors. The citation check runs in code. Hint mode gives hints, not full steps (D3-1a). The "not enough" rule is written down (§4).
 - [ ] PR 2: `POST /api/discussions` saves a resolved discussion as a draft for the contributor, with no follow-up questions.
 - [ ] At least 5 decoder cases are in the prompt suite, including no relevant record, hint mode, and a question only a saved discussion answers. At least one documented fail-then-fix cycle (CP2 item 6). The decoder part of the prompt card is written.
