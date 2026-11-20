@@ -1,6 +1,6 @@
 """The walking skeleton: paste a record, review and confirm the draft, ask about it.
 
-Fake LLM and stub encoder and decoder; real search. All names and records are made up.
+Fake LLM, stub encoder, real search. All names and records are made up.
 """
 
 from fastapi.testclient import TestClient
