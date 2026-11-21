@@ -30,6 +30,11 @@
 **What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
 
+## 2026-11-20 — A draft can be confirmed with empty gaps
+**What:** A contributor can confirm a draft while some `gaps` are still empty. Empty gaps stay in `gaps`, and the record view shows them in the "Not recorded: Ask {contributor} if you need these" panel. Before confirming, the "Before you confirm" panel lists each empty gap ("Labmates will see them as not recorded"), so confirming with gaps is a deliberate choice.
+**Why:** Contributors often don't know every detail, and blocking confirmation would keep useful records unsearchable (PRODUCT.md principle 3: keep the contributor's extra work small). Showing the gaps keeps documented facts visibly apart from missing ones (principle 2). We rejected requiring every gap to be filled before confirming, because it pushes contributors to guess or to leave drafts unconfirmed.
+**Led by:** Benedict
+
 ## 2026-11-20 — Part A: keyword search with FTS5
 **What:** `search()` is SQLite FTS5 over the confirmed `M` only (procedure, based on, changes with their reasons, troubleshooting, tags, contributors), with the `porter unicode61` tokenizer and BM25 ranking. The question becomes an OR of its keywords, after a short English stopword list (`retrieval/service.py`). Each keyword is quoted, so user text never acts as FTS5 syntax. `index()` writes a record into the index when it is confirmed.
 **Why:** Architecture §4 chose FTS5 with `porter`. Keyword search with stemming is enough for six to a few dozen English records, needs no extra model, and is easy to explain. OR with stopwords removed finds a record that shares any meaningful word with the question; BM25 puts the record with more and rarer shared words first.
