@@ -38,7 +38,7 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     assert view["info"]["text"] == TEXT
     assert view["record"]["troubleshooting"] == edited["troubleshooting"]
 
-    # 3. Bea asks; the answer cites Alex's record.
+    # 3. Bea asks; the fake LLM cites the top hit, Alex's record.
     asked = client.post("/api/ask", json={"question": "strain X transformation", "requester": BEA})
     assert asked.json()["answer"]["kind"] == "answered"
     assert [source["id"] for source in asked.json()["sources"]] == [record_id]

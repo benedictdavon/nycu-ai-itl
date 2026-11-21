@@ -20,6 +20,12 @@
 **Alternative rejected:** Keeping Ollama as a second backend (a second API to maintain and test, and the team prefers not to depend on it).
 **Led by:** Darius Lung
 
+## 2026-11-19 — When the decoder says "not enough"
+**What:** An answer is `insufficient` when search returns no hits (no model call), when the model finds the hits do not answer the question, or when no cited record survives the citation check. A partial answer, or one from a record about a different case, is `answered` with the gaps in `uncertainties`. The rule is in `architecture.md` §4.
+**Why:** Answers 03's open question with rules that code can enforce where possible: no hits and no valid citation are checked in code, so a model that ignores the prompt still cannot answer without a source. Partial answers stay useful to the requester, with what is missing said plainly.
+**Alternative rejected:** A search score threshold decided by Part C (the score belongs to Part A's search, which is not built yet); `insufficient` for any partial answer (hides useful records).
+**Led by:** Darius Lung
+
 ## 2026-11-20 — Code steward: Tommy
 **What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
@@ -29,3 +35,7 @@
 **Why:** Architecture §4 chose FTS5 with `porter`. Keyword search with stemming is enough for six to a few dozen English records, needs no extra model, and is easy to explain. OR with stopwords removed finds a record that shares any meaningful word with the question; BM25 puts the record with more and rarer shared words first.
 **Alternative rejected:** AND of all keywords (one extra word in the question would hide the right record). Embeddings stay the fallback if paraphrased questions are missed (architecture §4).
 **Led by:** Tommy
+
+## 2026-11-21 — Code steward: 李原誌
+**What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
