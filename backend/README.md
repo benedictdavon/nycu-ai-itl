@@ -2,7 +2,7 @@
 
 Contributors upload lab records, a local LLM drafts structured knowledge (`M`) for them to confirm, and requesters ask questions that are answered with links to the source records and their contributors. The product flow is [03 Interaction Design](../docs/cp1/03_interaction_design.md); how we build it is [architecture.md](../docs/cp2/architecture.md); the HTTP API is [api.md](../docs/cp2/api.md).
 
-**This is a walking skeleton.** One thin path runs end to end: paste a record, get a draft, edit and confirm it, ask about it. Search, the encoder and the decoder are **stubs**, and file upload, follow-up questions, saved discussions and the UI are not built yet. Each part owner adds theirs ([architecture.md §6](../docs/cp2/architecture.md#6-owners-and-plan)).
+**This is a walking skeleton.** One thin path runs end to end: paste a record, get a draft, edit and confirm it, ask about it. The encoder and the decoder are **stubs**, and file upload, follow-up questions, saved discussions and the UI are not built yet. Each part owner adds theirs ([architecture.md §6](../docs/cp2/architecture.md#6-owners-and-plan)).
 
 ## Run it
 
@@ -12,6 +12,12 @@ You need [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 for you). The
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload --port 8000
+```
+
+To load the six made-up records in `samples/records/` as confirmed, searchable records (safe to run twice):
+
+```sh
+uv run python -m app.retrieval.seed
 ```
 
 Open <http://127.0.0.1:8000/docs> to try the routes: `POST /api/infos`, then `POST /api/records/{id}/confirm`, then `POST /api/ask` with a word from the title.
@@ -58,7 +64,7 @@ uv run pytest -q
 |---|---|---|
 | `app/models.py` | Shared data structures: the contract. Changes need every owner's review. | Scaffold |
 | `app/main.py`, `app/config.py`, `app/llm.py`, `app/api/` | App, settings, LLM client, HTTP routes | Scaffold, then each part adds its routes |
-| `app/db.py`, `app/retrieval/` | SQLite storage; **stub** search | Part A |
+| `app/db.py`, `app/retrieval/` | SQLite storage, FTS5 search, contributor suggestion, sample seeder | Part A |
 | `app/encoder/` | **Stub** encoder (Part B also adds `app/ingest/`) | Part B |
 | `app/decoder/` | **Stub** decoder | Part C |
 | `../frontend/` | Not started | Part D |

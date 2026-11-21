@@ -1,6 +1,6 @@
 """SQLite tables and queries (standard-library `sqlite3`, no ORM).
 
-Owner: scaffold, then Part A. Spec: D1-2 (one Info, one M), D2-3a (draft -> confirmed).
+Owner: Part A. Spec: D1-2 (one Info, one M), D2-3a (draft -> confirmed), D3-1 (search).
 Every write commits. Functions never close the connection.
 """
 
@@ -8,7 +8,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from app.models import Info, Record, RecordDraft
+from app.models import Answer, Info, Record, RecordDraft
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS infos (
@@ -27,9 +27,26 @@ CREATE TABLE IF NOT EXISTS records (
   info_id INTEGER NOT NULL UNIQUE REFERENCES infos(id) ON DELETE CASCADE,  -- D1-2
   status TEXT NOT NULL CHECK (status IN ('draft','confirmed')),
   data TEXT NOT NULL,                               -- RecordDraft JSON
+  first_draft TEXT NOT NULL,                        -- the encoder's draft, never edited (04 §3)
   confirmed_by TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- Full-text index over confirmed M only (architecture.md §4). rowid = records.id.
+-- Filled by index_record() when a record is confirmed; drafts are never in it.
+CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
+  procedure, based_on, changes, troubleshooting, project_tags, contributors,
+  tokenize = 'porter unicode61'
+);
+-- Every question and its answer, as evidence for the evaluation (04 §3).
+CREATE TABLE IF NOT EXISTS asks (
+  id INTEGER PRIMARY KEY,
+  requester TEXT NOT NULL,
+  question TEXT NOT NULL,
+  hint_mode INTEGER NOT NULL,
+  hit_ids TEXT NOT NULL,                            -- JSON: record ids search returned, best first
+  answer TEXT NOT NULL,                             -- Answer JSON
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
 
@@ -45,9 +62,24 @@ def connect(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+class OutdatedDatabaseError(RuntimeError):
+    """The database file was made by an older version of the app. There is no migration."""
+
+
 def init_db(conn: sqlite3.Connection) -> None:
-    """Create the tables if they do not exist (idempotent)."""
+    """Create the tables if they do not exist (idempotent).
+
+    Raises OutdatedDatabaseError for a database made before `records.first_draft` existed:
+    CREATE TABLE IF NOT EXISTS does not add columns, and its confirmed records would also be
+    missing from the search index.
+    """
     conn.executescript(SCHEMA)
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(records)")}
+    if "first_draft" not in columns:
+        raise OutdatedDatabaseError(
+            "The database file was made by an older version of LabKnow. Delete it"
+            " (by default data/app.sqlite3; it holds only test data) and start again."
+        )
 
 
 def _info_from_row(row: sqlite3.Row) -> Info:
@@ -97,10 +129,14 @@ def get_info(conn: sqlite3.Connection, info_id: int) -> Info | None:
 
 
 def insert_record(conn: sqlite3.Connection, info_id: int, draft: RecordDraft) -> Record:
-    """Store a draft M. A second record for the same info raises sqlite3.IntegrityError."""
+    """Store a draft M, and keep a copy as its first draft.
+
+    A second record for the same info raises sqlite3.IntegrityError.
+    """
+    data = draft.model_dump_json()
     cursor = conn.execute(
-        "INSERT INTO records (info_id, status, data) VALUES (?, 'draft', ?)",
-        (info_id, draft.model_dump_json()),
+        "INSERT INTO records (info_id, status, data, first_draft) VALUES (?, 'draft', ?, ?)",
+        (info_id, data, data),
     )
     conn.commit()
     return _require(get_record(conn, cursor.lastrowid or 0))
@@ -109,6 +145,12 @@ def insert_record(conn: sqlite3.Connection, info_id: int, draft: RecordDraft) ->
 def get_record(conn: sqlite3.Connection, record_id: int) -> Record | None:
     row = conn.execute("SELECT * FROM records WHERE id = ?", (record_id,)).fetchone()
     return None if row is None else _record_from_row(row)
+
+
+def get_first_draft(conn: sqlite3.Connection, record_id: int) -> RecordDraft | None:
+    """The encoder's draft as it was before any edit on review."""
+    row = conn.execute("SELECT first_draft FROM records WHERE id = ?", (record_id,)).fetchone()
+    return None if row is None else RecordDraft.model_validate_json(row["first_draft"])
 
 
 def update_record_draft(conn: sqlite3.Connection, record_id: int, draft: RecordDraft) -> Record:
@@ -150,6 +192,79 @@ def list_records(
     if contributor is not None:
         records = [record for record in records if contributor in record.contributors]
     return records
+
+
+def index_record(conn: sqlite3.Connection, record: Record) -> None:
+    """Put a confirmed record into the full-text index, replacing any earlier entry."""
+    changes = " ".join(f"{c.what}. {c.reason or ''}" for c in record.changes)
+    conn.execute("DELETE FROM records_fts WHERE rowid = ?", (record.id,))
+    conn.execute(
+        "INSERT INTO records_fts (rowid, procedure, based_on, changes, troubleshooting,"
+        " project_tags, contributors) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (
+            record.id,
+            record.procedure,
+            record.based_on or "",
+            changes,
+            record.troubleshooting or "",
+            " ".join(record.project_tags),
+            " ".join(record.contributors),
+        ),
+    )
+    conn.commit()
+
+
+def search_records(conn: sqlite3.Connection, match: str, k: int) -> list[tuple[Record, float]]:
+    """Confirmed records matching an FTS5 query, best first, with their BM25 score.
+
+    FTS5's bm25() is lower for better matches; the score returned is its negation, so higher
+    is better.
+    """
+    rows = conn.execute(
+        "SELECT r.*, bm25(records_fts) AS rank FROM records_fts"
+        " JOIN records r ON r.id = records_fts.rowid"
+        " WHERE records_fts MATCH ? AND r.status = 'confirmed'"
+        " ORDER BY rank LIMIT ?",
+        (match, k),
+    )
+    return [(_record_from_row(row), -row["rank"]) for row in rows]
+
+
+def matching_record_ids(conn: sqlite3.Connection, match: str) -> set[int]:
+    """Ids of every confirmed record matching an FTS5 query."""
+    rows = conn.execute(
+        "SELECT r.id FROM records_fts JOIN records r ON r.id = records_fts.rowid"
+        " WHERE records_fts MATCH ? AND r.status = 'confirmed'",
+        (match,),
+    )
+    return {row["id"] for row in rows}
+
+
+def insert_ask(
+    conn: sqlite3.Connection,
+    *,
+    requester: str,
+    question: str,
+    hint_mode: bool,
+    hit_ids: list[int],
+    answer: Answer,
+) -> int:
+    """Log one question and its answer (04 §3). Returns the log entry's id."""
+    cursor = conn.execute(
+        "INSERT INTO asks (requester, question, hint_mode, hit_ids, answer) VALUES (?, ?, ?, ?, ?)",
+        (requester, question, int(hint_mode), json.dumps(hit_ids), answer.model_dump_json()),
+    )
+    conn.commit()
+    return cursor.lastrowid or 0
+
+
+def find_info(conn: sqlite3.Connection, contributor: str, title: str) -> Info | None:
+    """The first Info with this contributor and title, if any (used by the sample seeder)."""
+    row = conn.execute(
+        "SELECT * FROM infos WHERE contributor = ? AND title = ? ORDER BY id LIMIT 1",
+        (contributor, title),
+    ).fetchone()
+    return None if row is None else _info_from_row(row)
 
 
 def _require[T](value: T | None) -> T:

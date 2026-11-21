@@ -7,9 +7,20 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app import db
-from app.config import Settings
+from app import db, llm
+from app.config import Settings, get_settings
 from app.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _fake_llm(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Every test uses the fake LLM, whatever the developer's .env says."""
+    monkeypatch.setenv("LLM_BACKEND", "fake")
+    get_settings.cache_clear()
+    llm.reset_llm()
+    yield
+    llm.reset_llm()
+    get_settings.cache_clear()
 
 
 @pytest.fixture
