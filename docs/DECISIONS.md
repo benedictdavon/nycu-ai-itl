@@ -30,6 +30,12 @@
 **What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
 
+## 2026-11-20 — Part A: keyword search with FTS5
+**What:** `search()` is SQLite FTS5 over the confirmed `M` only (procedure, based on, changes with their reasons, troubleshooting, tags, contributors), with the `porter unicode61` tokenizer and BM25 ranking. The question becomes an OR of its keywords, after a short English stopword list (`retrieval/service.py`). Each keyword is quoted, so user text never acts as FTS5 syntax. `index()` writes a record into the index when it is confirmed.
+**Why:** Architecture §4 chose FTS5 with `porter`. Keyword search with stemming is enough for six to a few dozen English records, needs no extra model, and is easy to explain. OR with stopwords removed finds a record that shares any meaningful word with the question; BM25 puts the record with more and rarer shared words first.
+**Alternative rejected:** AND of all keywords (one extra word in the question would hide the right record). Embeddings stay the fallback if paraphrased questions are missed (architecture §4).
+**Led by:** Tommy
+
 ## 2026-11-21 — Code steward: 李原誌
 **What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
