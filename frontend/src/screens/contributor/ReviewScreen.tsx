@@ -15,7 +15,7 @@ import { TwoColumn } from "../../components/TwoColumn";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useMe } from "../../lib/me";
-import { normaliseNumber, uncheckedNumbers } from "../../lib/numbers";
+import { findNumbers, normaliseNumber, uncheckedNumbers } from "../../lib/numbers";
 import {
   countEmptyGaps,
   draftRows,
@@ -287,6 +287,10 @@ function DraftReview({ record, info, followUps }: Loaded) {
   const flagKeys = new Set(unchecked.map(normaliseNumber));
   const numbersInRow = numbersByRow(rows, sources);
   const highlightKeys = numberKeys(rows);
+  // Same rule as NumberText's highlight mode: a number in the record that the draft also uses.
+  const anyHighlighted = findNumbers(info.text).some((match) =>
+    highlightKeys.has(normaliseNumber(match.text)),
+  );
   const answered = followUps.filter((followUp) => followUp.answer !== null);
   const emptyGaps = countEmptyGaps(working);
 
@@ -404,8 +408,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
           onEditingChange={(open) => setRowOpen("tags", "Project tags", open)}
         />
 
-        <section className="mt-6">
-          <h2 className="type-headline text-bench-ink">Changes from the SOP</h2>
+        <section className="border-t border-hairline py-4">
+          <h2 className="type-label text-ink-secondary">Changes from the SOP</h2>
           <div className="mt-2">
             {working.changes.map((change) => (
               <ChangeRow
@@ -601,12 +605,17 @@ function DraftReview({ record, info, followUps }: Loaded) {
 
   const side = (
     <>
-      <h2 className="type-headline text-bench-ink">Your original record</h2>
+      <h2 id="original-record" className="scroll-mt-6 type-headline text-bench-ink">
+        Your original record
+      </h2>
       <Card className="mt-3">
-        <p className="whitespace-pre-wrap type-body text-bench-ink">
+        {/* On a long record, the text scrolls inside the card on desktop, so the sticky card stays short. */}
+        <p className="whitespace-pre-wrap type-body text-bench-ink lg:max-h-[50vh] lg:overflow-y-auto">
           <NumberText text={info.text} mode="highlight" keys={highlightKeys} />
         </p>
-        <p className="mt-3 type-body-small text-ink-muted">Highlighted: parts the draft uses.</p>
+        {anyHighlighted && (
+          <p className="mt-3 type-body-small text-ink-muted">Highlighted: parts the draft uses.</p>
+        )}
         {info.link && (
           <p className="mt-3">
             <a
@@ -641,7 +650,11 @@ function DraftReview({ record, info, followUps }: Loaded) {
       {progress}
       <h1 className="mt-6 type-display text-bench-ink">Check the draft</h1>
       <p className="mt-3 max-w-[66ch] type-body text-ink-secondary">
-        Read it against your record on the right. LabKnow has marked what to look at first.
+        Read it against{" "}
+        <a href="#original-record" className="text-coomassie-blue underline underline-offset-4">
+          your original record
+        </a>
+        . LabKnow has marked what to look at first.
       </p>
 
       <ul aria-label="What LabKnow found" className="mt-6 flex flex-wrap items-center gap-2">
@@ -665,7 +678,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
       </ul>
 
       <div className="mt-8">
-        <TwoColumn main={main} side={side} />
+        <TwoColumn main={main} side={side} stickySide />
       </div>
     </Page>
   );

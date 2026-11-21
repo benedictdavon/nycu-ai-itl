@@ -128,3 +128,49 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
     Fix round 2: At 1920 the tag "pET-28a" breaks at its hyphen across two lines. Wrap each tag's text (not the separator) in `<span className="inline-block max-w-full">{tag}</span>`.
     
     Fix round 3: With every tag inline-block, the multi-word tag "kanamycin resistance screening" jumps to its own line and leaves "T7 ·" alone. Apply `inline-block max-w-full` only to tags that contain no space, with a one-line comment: single-word tags such as "pET-28a" must not break at the hyphen, while multi-word tags wrap at their spaces like normal text.
+
+### Phase 3: layout and adapt (P2/P3)
+
+#### Brief to the implementer
+
+    Phase 3 of 3: layout and adapt (P2/P3). Same rules: worktree C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file and its test before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
+    
+    Relevant DESIGN.md rules (frontend/DESIGN.md "Layout", "Typography"): container max 1160px; two-column pattern main `flex: 999 1 560px`, side `flex: 1 1 320px`, 32px gap (so at full width the main column is 1112 - 32 - 320 = 760px); reading text ≤ 66ch; more space above a heading than below; one display heading per screen.
+    
+    Measured now at 1920x1080 (main column left x=404 on every screen):
+    - Who list is 560px wide; Inbox content 1160px; Ask form 1112px before an answer, then the textarea shrinks to 760px when the Sources side column appears (the layout jumps).
+    - Ask "Hints first": label at x=404, switch at x=1468 (≈590px of empty space from the end of the hint text, ≈1000px from the label word).
+    - Inbox: chevrons in "Drafts to check" cards are at right=1491 (inside the card's 24px padding) but in the "Confirmed by you" list at right=1516.
+    - Check the draft: "Your original record" side column scrolls away (its heading at y=-416 after scrolling 900px).
+    - Draft card headings: H1 "Check the draft" 36px, then H3 Procedure/Based on/Contributors/Project tags 15px, then H2 "Changes from the SOP" 22px, then H3 "What went wrong, and the fix" 15px.
+    - Phone 390x844: the lead says "Read it against your record on the right." but "Confirm record" is at y=2015 and "Your original record" at y=2112, below it.
+    - Draft #2 (no numbers in common) shows "Highlighted: parts the draft uses." with 0 highlighted parts.
+    - AnswerView "Still stuck? Ask a person" text button: its text starts 12px right of the answer text column (button px-3).
+    
+    ## 6. Wide screens
+    - Add one width token: `--container-reading: 760px;` in the `@theme` block of `frontend/src/index.css` (next to `--container-page`), giving `max-w-reading`. Document it in `frontend/DESIGN.md` Layout with one bullet: single-column screens use the reading width (760px), the same as the main column of the two-column pattern at full width, so content edges line up across screens.
+    - Apply `max-w-reading` to the single-column content of: WhoScreen (replace `max-w-[560px]` at WhoScreen.tsx:25), InboxScreen (wrap the page content in a `max-w-reading` div, or put it on the content container), and Ask's main column (AskScreen.tsx `main`: add `max-w-reading` to the outer `flex flex-col gap-8` div). With that, the Ask form is 760px before and after an answer, so it no longer jumps when Sources appear.
+    - Ask "Hints first" (AskScreen.tsx ~line 214): put the Switch directly beside its label instead of at the far end: a row with the Switch first, then the label and hint text (e.g. `flex items-start gap-3`), the switch vertically aligned with the label line. Keep `id`, `htmlFor`, `aria-describedby` wiring unchanged. Keep the 44px minimum target (check `components/ui/switch.tsx`; don't change the switch component unless needed).
+    - Inbox chevrons (InboxScreen.tsx ~line 172): align the "Confirmed by you" rows with the draft cards: give each confirmed row link the same horizontal padding as the draft card (`px-5 sm:px-6`) so the title text and chevron line up with the cards' title and chevron.
+    - Check the draft: make the side column ("Your original record") sticky on desktop. Add an optional prop to `frontend/src/components/TwoColumn.tsx`, e.g. `stickySide?: boolean`, that adds `lg:sticky lg:top-6` to the side flex item (the flex item itself, not an inner wrapper, or sticky won't work). Use it only in ReviewScreen. So a long original record can still be read while sticky, cap the record text block in ReviewScreen's side card (the `<p className="whitespace-pre-wrap ...">` with NumberText) at `lg:max-h-[50vh] lg:overflow-y-auto`. Do not add overflow to the side column itself (it would clip card shadows and focus rings).
+    
+    ## 7. Draft card hierarchy (ReviewScreen.tsx, DraftRows.tsx)
+    - Make every field label in the draft card the same heading level and style, directly under the page h1: change the row labels from `h3` to `h2` (RowHeader in DraftRows.tsx:27 and the editing-mode "Contributors" h3 in ContributorsRow), keeping their `type-label text-ink-secondary` style.
+    - "Changes from the SOP" (ReviewScreen.tsx ~line 409) becomes an h2 with the same `type-label text-ink-secondary` style as the other field labels (not `type-headline`), and keep its spacing consistent with the other rows (it should read as one more row: give the section the same top border/padding rhythm as the rows, `border-t border-hairline pt-4`, instead of `mt-6`).
+    - Leave the GapPanel heading and the side column headings unchanged.
+    - Update any tests that query these headings by level (`getByRole("heading", { level: 3 ... })` etc.).
+    
+    ## 8. Phone order (ReviewScreen.tsx ~line 507)
+    Fix the copy, not the order. Change the lead to: "Read it against your original record. LabKnow has marked what to look at first." where "your original record" is an in-page link (`<a href="#original-record">`, styled like the other text links: `text-coomassie-blue underline underline-offset-4`) to the side heading, which gets `id="original-record"` (and `scroll-mt-6`). This drops "on the right", which is wrong on a phone, and gives phone users a jump to the record.
+    
+    ## 9. P3
+    - ReviewScreen side card: show "Highlighted: parts the draft uses." only when at least one number in `info.text` is highlighted, i.e. when some `findNumbers(info.text)` match has `normaliseNumber(match.text)` in `highlightKeys` (use the existing helpers in `frontend/src/lib/numbers.ts`; check how `NumberText` decides what to highlight and use the same rule).
+    - AnswerView.tsx:127 "Still stuck? Ask a person": remove the ghost indent so the button text lines up with the answer text, by adding `-ml-3` to that text button (keeps its hover fill padding). Check other `variant="text"` buttons that sit alone at the start of a text column on the requester screens (e.g. OpenQuestionsCard, HelpStep) and apply the same only where the button's text should align with text above it; list which ones you changed.
+    
+    ## Tests
+    - ReviewScreen: legend hidden when no number in the record is used by the draft, shown when one is; the lead link points to `#original-record`; heading levels updated in existing tests.
+    - Keep all existing tests passing.
+
+#### Resume after a server restart
+
+    Resume after interruption: your Phase 3 run was interrupted by a server restart before you reported. Partial edits are on disk; do not revert them. Run `git diff` (read-only) and compare it item by item against the Phase 3 brief, finish whatever is missing or half-done, make no other changes, run typecheck, lint and test, and report every brief item with done/not done and file:line, the text buttons changed under item 9, and the exact results.

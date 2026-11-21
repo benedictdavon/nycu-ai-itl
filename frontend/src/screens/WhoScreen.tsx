@@ -22,7 +22,7 @@ export default function WhoScreen() {
 
   return (
     <Page>
-      <div className="max-w-[560px]">
+      <div className="max-w-reading">
         <h1 className="type-display text-bench-ink">Who are you?</h1>
         <p className="mt-3 type-body text-ink-secondary">
           Pick your name. LabKnow uses it to credit the records you add and to show you drafts to

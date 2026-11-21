@@ -124,7 +124,8 @@ export function AnswerView({
         )}
 
         <div>
-          <Button variant="text" aria-expanded={helpOpen} onClick={onToggleHelp}>
+          {/* -ml-3 cancels the button's px-3, so its text lines up with the answer above. */}
+          <Button variant="text" className="-ml-3" aria-expanded={helpOpen} onClick={onToggleHelp}>
             Still stuck? Ask a person
           </Button>
         </div>

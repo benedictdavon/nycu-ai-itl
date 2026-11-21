@@ -495,3 +495,45 @@ describe("Check the draft: leaving with unsaved edits", () => {
     expect(dirty.defaultPrevented).toBe(true);
   });
 });
+
+describe("Check the draft: layout", () => {
+  it("shows the highlight legend only when a number in the record is used by the draft", async () => {
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    const { unmount } = renderAt();
+
+    expect(await screen.findByRole("heading", { name: "Your original record" })).toBeInTheDocument();
+    expect(screen.queryByText("Highlighted: parts the draft uses.")).not.toBeInTheDocument();
+    unmount();
+
+    // "50 ng" is in the record, so a draft that uses it highlights it.
+    stubReview({ record: record({ changes: [{ what: "Used 50 ng plasmid", reason: null }] }) });
+    renderAt();
+
+    expect(await screen.findByText("Highlighted: parts the draft uses.")).toBeInTheDocument();
+  });
+
+  it("links the lead to the original record heading", async () => {
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+
+    const link = await screen.findByRole("link", { name: "your original record" });
+    expect(link).toHaveAttribute("href", "#original-record");
+    expect(screen.getByRole("heading", { name: "Your original record" })).toHaveAttribute(
+      "id",
+      "original-record",
+    );
+  });
+
+  it("puts each draft field label at the same level, under the page heading", async () => {
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Check the draft" })).toBeInTheDocument();
+    for (const label of ["Procedure", "Based on", "Contributors", "Project tags", "Changes from the SOP"]) {
+      expect(screen.getByRole("heading", { level: 2, name: label })).toBeInTheDocument();
+    }
+  });
+});

@@ -157,34 +157,36 @@ export default function InboxScreen() {
 
   return (
     <Page>
-      <h1 className="type-display text-bench-ink">To review</h1>
-      <p className="mt-3 max-w-[62ch] type-body text-ink-secondary">
-        Questions and drafts waiting for you. Labmates can't find a record until you confirm it.
-      </p>
+      <div className="max-w-reading">
+        <h1 className="type-display text-bench-ink">To review</h1>
+        <p className="mt-3 max-w-[62ch] type-body text-ink-secondary">
+          Questions and drafts waiting for you. Labmates can't find a record until you confirm it.
+        </p>
 
-      <div className="mt-8 flex flex-col gap-10">
-        {drafts}
+        <div className="mt-8 flex flex-col gap-10">
+          {drafts}
 
-        {load.status === "ready" && load.confirmed.length > 0 && (
-          <section aria-labelledby="confirmed-heading">
-            <h2 id="confirmed-heading" className="type-headline text-bench-ink">
-              Confirmed by you
-            </h2>
-            <ul className="mt-3 divide-y divide-rule">
-              {load.confirmed.map((record) => (
-                <li key={record.id}>
-                  <Link
-                    to={`/records/${record.id}`}
-                    className="flex min-h-13 items-center justify-between gap-3 py-3 type-label text-bench-ink transition-colors duration-quick ease-out hover:text-coomassie-blue"
-                  >
-                    <span className="min-w-0">{record.procedure}</span>
-                    <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-secondary" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+          {load.status === "ready" && load.confirmed.length > 0 && (
+            <section aria-labelledby="confirmed-heading">
+              <h2 id="confirmed-heading" className="type-headline text-bench-ink">
+                Confirmed by you
+              </h2>
+              <ul className="mt-3 divide-y divide-rule">
+                {load.confirmed.map((record) => (
+                  <li key={record.id}>
+                    <Link
+                      to={`/records/${record.id}`}
+                      className="flex min-h-13 items-center justify-between gap-3 px-5 py-3 type-label text-bench-ink transition-colors duration-quick ease-out hover:text-coomassie-blue sm:px-6"
+                    >
+                      <span className="min-w-0">{record.procedure}</span>
+                      <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-secondary" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       </div>
     </Page>
   );

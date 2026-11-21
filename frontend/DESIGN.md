@@ -227,6 +227,7 @@ A neutral bench-and-paper base with two signal colours, each with a single job.
 
 - **Container:** max-width 1160px, centred, 24px side padding (16px on phones).
 - **Two-column pattern:** main content plus a side column (the original record, sources, "what happens next"). Main is `flex: 999 1 560px`, side is `flex: 1 1 320px`, with a 32px gap. They stack automatically below about 912px, side column last.
+- **Single-column width:** single-column screens use the reading width (760px), the same as the main column of the two-column pattern at full width, so content edges line up across screens.
 - **Reading width:** answers, leads and explanations stay at or below 66ch even inside wide cards.
 - **Rhythm:** groups of related items are 8 to 12px apart, fields 20 to 24px apart, and sections 28 to 40px apart. There is always more space above a heading than below it.
 - **Header:** the wordmark, then the nav (Ask, Add a record, To review with a count), then the current person at the far end. On phones, the nav becomes a row of three equal tabs under the wordmark.

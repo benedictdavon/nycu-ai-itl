@@ -24,7 +24,7 @@ export type RowNumbers = {
 function RowHeader({ label, onEdit }: { label: string; onEdit: () => void }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <h3 className="type-label text-ink-secondary">{label}</h3>
+      <h2 className="type-label text-ink-secondary">{label}</h2>
       <Button variant="text" aria-label={`Edit ${label}`} onClick={onEdit} className="-my-2 -mr-3">
         Edit
       </Button>
@@ -258,7 +258,7 @@ export function ContributorsRow({
     const candidates = members.filter((member) => !list.includes(member));
     return (
       <div className="py-4" data-editing>
-        <h3 className="type-label text-ink-secondary">Contributors</h3>
+        <h2 className="type-label text-ink-secondary">Contributors</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {list.map((name) =>
             name === uploader ? (

@@ -178,7 +178,7 @@ export default function AskScreen() {
     ) : undefined;
 
   const main = (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-reading flex-col gap-8">
       {visible.length > 0 && <OpenQuestionsCard entries={visible} onNotSolved={notSolvedFromCard} />}
 
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
@@ -207,19 +207,22 @@ export default function AskScreen() {
           )}
         </div>
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={switchId}>Hints first</Label>
-            <p id={switchHintId} className="type-body-small text-ink-muted">
-              Get pointers to work it out yourself. You can ask for the full answer after.
-            </p>
-          </div>
+        <div className="flex items-start gap-3">
           <Switch
             id={switchId}
             checked={hintsFirst}
             onCheckedChange={setHintsFirst}
             aria-describedby={switchHintId}
           />
+          <div className="flex min-w-0 flex-col gap-1.5">
+            {/* The label is as tall as the switch, so the two share one line. */}
+            <Label htmlFor={switchId} className="flex min-h-7 items-center">
+              Hints first
+            </Label>
+            <p id={switchHintId} className="type-body-small text-ink-muted">
+              Get pointers to work it out yourself. You can ask for the full answer after.
+            </p>
+          </div>
         </div>
 
         <div>

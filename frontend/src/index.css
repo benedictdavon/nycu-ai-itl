@@ -73,6 +73,8 @@
 
   /* Container for the 1160px page width */
   --container-page: 1160px;
+  /* Reading width for single-column content: the main column of the two-column pattern at full width */
+  --container-reading: 760px;
 
   /* Indeterminate progress bar on the waiting card */
   --animate-waiting-bar: waiting-bar 1.6s var(--ease-out) infinite;
