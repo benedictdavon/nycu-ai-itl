@@ -307,38 +307,48 @@ describe("Check the draft: access and progress", () => {
 });
 
 describe("Check the draft: an open edit blocks Save and Confirm", () => {
-  it("refuses Save draft while a row is open, names the row and focuses its input", async () => {
+  /** The open row that holds a field. The refusal must show inside that row. */
+  function openRowOf(field: HTMLElement): HTMLElement {
+    const row = field.closest<HTMLElement>("[data-editing]");
+    if (row === null) throw new Error("the field is not in an open row");
+    return row;
+  }
+
+  it("refuses Save draft while a row is open: the refusal shows under that row and focus stays on its input", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubReview();
     renderAt();
 
     await user.click(await screen.findByRole("button", { name: "Edit Based on" }));
-    await user.type(screen.getByRole("textbox", { name: /Based on/ }), "Kit A");
+    const field = screen.getByRole("textbox", { name: /Based on/ });
+    await user.type(field, "Kit A");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Save or cancel your edit to Based on first.");
+    expect(within(openRowOf(field)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(writes(calls)).toEqual([]);
-    expect(screen.getByRole("textbox", { name: /Based on/ })).toHaveFocus();
+    expect(field).toHaveFocus();
   });
 
-  it("refuses Confirm record while a row is open: the panel does not open", async () => {
+  it("refuses Confirm record while a row is open: the panel does not open and no request is made", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubReview();
     renderAt();
 
     await user.click(await screen.findByRole("button", { name: "Edit Based on" }));
-    await user.type(screen.getByRole("textbox", { name: /Based on/ }), "Kit A");
+    const field = screen.getByRole("textbox", { name: /Based on/ });
+    await user.type(field, "Kit A");
     await user.click(screen.getByRole("button", { name: "Confirm record" }));
 
     expect(screen.queryByRole("heading", { name: "Before you confirm" })).not.toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Save or cancel your edit to Based on first.");
+    expect(within(openRowOf(field)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
     expect(writes(calls)).toEqual([]);
-    expect(screen.getByRole("textbox", { name: /Based on/ })).toHaveFocus();
+    expect(field).toHaveFocus();
   });
 
-  it("refuses Confirm and publish for a row opened after the panel was shown, with the message in the panel", async () => {
+  it("refuses Confirm and publish for a row opened after the panel was shown: the refusal is in the row, not the panel", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubReview();
@@ -346,27 +356,43 @@ describe("Check the draft: an open edit blocks Save and Confirm", () => {
 
     await user.click(await screen.findByRole("button", { name: "Confirm record" }));
     await user.click(screen.getByRole("button", { name: "Edit Based on" }));
+    const field = screen.getByRole("textbox", { name: /Based on/ });
     await user.click(screen.getByRole("button", { name: "Confirm and publish" }));
 
     expect(writes(calls)).toEqual([]);
+    expect(within(openRowOf(field)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
     const panel = screen.getByRole("region", { name: "Before you confirm" });
-    expect(within(panel).getByRole("alert")).toHaveTextContent(
-      "Save or cancel your edit to Based on first.",
-    );
+    expect(within(panel).queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("a newly added change blocks Save draft until it is cancelled", async () => {
+  it("shows the refusal under every open row", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    const { calls } = stubReview();
+    renderAt();
+
+    await user.click(await screen.findByRole("button", { name: "Edit Based on" }));
+    await user.click(screen.getByRole("button", { name: "Edit Procedure" }));
+    const basedOn = screen.getByRole("textbox", { name: /Based on/ });
+    const procedure = screen.getByRole("textbox", { name: "Procedure" });
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(within(openRowOf(basedOn)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
+    expect(within(openRowOf(procedure)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
+    expect(writes(calls)).toEqual([]);
+  });
+
+  it("a newly added change shows the refusal in its row until it is cancelled", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubReview();
     renderAt();
 
     await user.click(await screen.findByRole("button", { name: "Add a change" }));
+    const field = screen.getByRole("textbox", { name: "What changed" });
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Save or cancel your edit to a new change first.",
-    );
+    expect(within(openRowOf(field)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
     expect(writes(calls)).toEqual([]);
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -377,18 +403,17 @@ describe("Check the draft: an open edit blocks Save and Confirm", () => {
     expect(writes(calls)).toEqual(["PUT /api/records/7"]);
   });
 
-  it("names an open existing change by its text in the message", async () => {
+  it("shows the refusal inside an open existing change row", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubReview();
     renderAt();
 
     await user.click(await screen.findByRole("button", { name: "Edit change: Recovery 1 h at 37 °C" }));
+    const field = screen.getByRole("textbox", { name: "What changed" });
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      'Save or cancel your edit to the change "Recovery 1 h at 37 °C" first.',
-    );
+    expect(within(openRowOf(field)).getByRole("alert")).toHaveTextContent("Save or cancel this edit first.");
     expect(writes(calls)).toEqual([]);
   });
 });
@@ -535,5 +560,19 @@ describe("Check the draft: layout", () => {
     for (const label of ["Procedure", "Based on", "Contributors", "Project tags", "Changes from the SOP"]) {
       expect(screen.getByRole("heading", { level: 2, name: label })).toBeInTheDocument();
     }
+  });
+
+  it("keeps the progress header when the lead link jumps to the original record", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubReview();
+    renderAt({ fromAdd: true });
+
+    await user.click(await screen.findByRole("link", { name: "your original record" }));
+
+    expect(screen.getByRole("list", { name: "Progress" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Back to To review" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your original record" })).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 });

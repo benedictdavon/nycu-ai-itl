@@ -75,22 +75,11 @@ function failureFrom(err: unknown, step: "save" | "confirm"): Failure {
   return { kind: step };
 }
 
-/** Where a press was refused: the card's action bar, or the "Before you confirm" panel. */
-type Place = "card" | "panel";
-
-/** A row open for editing, with the name the message uses for it. */
-type OpenRow = { id: string; label: string };
-
 /** The fields inside an open row, in page order. */
 const OPEN_FIELD = "[data-editing] input, [data-editing] textarea, [data-editing] select, [data-editing] button";
 
-/** "Save or cancel your edit to Based on first." or "... edits to Based on and Project tags first." */
-function openRowsMessage(rows: OpenRow[]): string {
-  const labels = rows.map((row) => row.label);
-  const names =
-    labels.length > 1 ? `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}` : labels[0];
-  return `Save or cancel your ${labels.length === 1 ? "edit" : "edits"} to ${names} first.`;
-}
+/** Shown under every open row when a Save or Confirm press is refused. Each row sits under its own label. */
+const REFUSED_MESSAGE = "Save or cancel this edit first.";
 
 /** Check the draft: /review/:recordId. Loads the draft, then shows it for checking. */
 export default function ReviewScreen() {
@@ -203,14 +192,15 @@ function DraftReview({ record, info, followUps }: Loaded) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
-  // The rows open for editing, and the press that was refused because of them.
-  const [rowEdits, setRowEdits] = useState<{ open: OpenRow[]; blocked: Place | null }>({
+  // The rows open for editing, and whether a Save or Confirm press was refused because of them.
+  const [rowEdits, setRowEdits] = useState<{ open: string[]; refused: boolean }>({
     open: [],
-    blocked: null,
+    refused: false,
   });
   const cardRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const originalRecordRef = useRef<HTMLHeadingElement>(null);
   // The Confirm record button that opened the panel. Escape and "Go back" return focus to it.
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
   // Set just before a confirmed record opens, so the leave check below lets that one move through.
@@ -250,25 +240,23 @@ function DraftReview({ record, info, followUps }: Loaded) {
     headingRef.current?.focus({ preventScroll: true });
   }, [confirming]);
 
-  /** A row reports when it opens or closes. When the last open row closes, the message goes too. */
-  function setRowOpen(id: string, label: string, open: boolean) {
+  /** A row reports when it opens or closes. When the last open row closes, the refusal goes too. */
+  function setRowOpen(id: string, open: boolean) {
     setRowEdits((current) => {
-      const isOpen = current.open.some((row) => row.id === id);
+      const isOpen = current.open.includes(id);
       if (isOpen === open) return current;
-      const next = open
-        ? [...current.open, { id, label }]
-        : current.open.filter((row) => row.id !== id);
-      return { open: next, blocked: next.length === 0 ? null : current.blocked };
+      const next = open ? [...current.open, id] : current.open.filter((item) => item !== id);
+      return { open: next, refused: next.length === 0 ? false : current.refused };
     });
   }
 
   /**
-   * Refuses a press while a row is open. The message appears by that press, and focus moves to the
-   * open row so its edit can be saved or cancelled. Returns true when the press was refused.
+   * Refuses a press while a row is open. Every open row then shows the refusal under its actions,
+   * and focus moves to the first open row's first control. Returns true when the press was refused.
    */
-  function blockedByOpenRow(place: Place): boolean {
+  function blockedByOpenRow(): boolean {
     if (rowEdits.open.length === 0) return false;
-    setRowEdits((current) => ({ ...current, blocked: place }));
+    setRowEdits((current) => ({ ...current, refused: true }));
     cardRef.current?.querySelector<HTMLElement>(OPEN_FIELD)?.focus();
     return true;
   }
@@ -277,6 +265,18 @@ function DraftReview({ record, info, followUps }: Loaded) {
     setConfirming(false);
     confirmButtonRef.current?.focus();
   }
+
+  /**
+   * The lead's link to the side heading. It is handled here, not left to the browser: a hash
+   * navigation would replace this history entry's state and drop the "Record added" progress.
+   */
+  function jumpToOriginalRecord() {
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    originalRecordRef.current?.scrollIntoView?.({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+    originalRecordRef.current?.focus({ preventScroll: true });
+  }
+
+  const blockedMessage = rowEdits.refused ? REFUSED_MESSAGE : undefined;
 
   const rows = draftRows(working);
   const sources = sourceTexts(info, followUps, kept);
@@ -324,7 +324,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
   async function confirmAndPublish() {
     if (me === null) return;
     // A row may have been opened after the panel was shown, so check again.
-    if (blockedByOpenRow("panel")) return;
+    if (blockedByOpenRow()) return;
     setBusy(true);
     setFailure(null);
     let step: "save" | "confirm" = "confirm";
@@ -383,7 +383,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
           requiredMessage="Add the procedure name."
           valueClassName="type-title text-bench-ink"
           onSave={(value) => edit((current) => ({ ...current, procedure: value }))}
-          onEditingChange={(open) => setRowOpen("procedure", "Procedure", open)}
+          onEditingChange={(open) => setRowOpen("procedure", open)}
+          blockedMessage={blockedMessage}
           {...numberProps("procedure")}
         />
         <TextRow
@@ -392,7 +393,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
           value={working.based_on}
           emptyText="Not given"
           onSave={(value) => edit((current) => ({ ...current, based_on: value || null }))}
-          onEditingChange={(open) => setRowOpen("based_on", "Based on", open)}
+          onEditingChange={(open) => setRowOpen("based_on", open)}
+          blockedMessage={blockedMessage}
           {...numberProps("based_on")}
         />
         <ContributorsRow
@@ -400,12 +402,14 @@ function DraftReview({ record, info, followUps }: Loaded) {
           uploader={info.contributor}
           me={me}
           onSave={(list) => edit((current) => ({ ...current, contributors: list }))}
-          onEditingChange={(open) => setRowOpen("contributors", "Contributors", open)}
+          onEditingChange={(open) => setRowOpen("contributors", open)}
+          blockedMessage={blockedMessage}
         />
         <TagsRow
           tags={working.project_tags}
           onSave={(tags) => edit((current) => ({ ...current, project_tags: tags }))}
-          onEditingChange={(open) => setRowOpen("tags", "Project tags", open)}
+          onEditingChange={(open) => setRowOpen("tags", open)}
+          blockedMessage={blockedMessage}
         />
 
         <section className="border-t border-hairline py-4">
@@ -430,14 +434,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
                     changes: current.changes.filter((item) => item.key !== change.key),
                   }))
                 }
-                onEditingChange={(open) =>
-                  setRowOpen(
-                    `change-${change.key}`,
-                    // Named by its text as it stood when the row opened. A just-added change has none.
-                    change.what ? `the change "${change.what}"` : "a new change",
-                    open,
-                  )
-                }
+                onEditingChange={(open) => setRowOpen(`change-${change.key}`, open)}
+                blockedMessage={blockedMessage}
                 {...numberProps(`change-${change.key}`)}
               />
             ))}
@@ -463,7 +461,8 @@ function DraftReview({ record, info, followUps }: Loaded) {
           value={working.troubleshooting}
           emptyText="Nothing recorded"
           onSave={(value) => edit((current) => ({ ...current, troubleshooting: value || null }))}
-          onEditingChange={(open) => setRowOpen("troubleshooting", "What went wrong, and the fix", open)}
+          onEditingChange={(open) => setRowOpen("troubleshooting", open)}
+          blockedMessage={blockedMessage}
           {...numberProps("troubleshooting")}
         />
 
@@ -516,7 +515,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
           <Button
             variant="secondary"
             onClick={() => {
-              if (!blockedByOpenRow("card")) void saveDraft();
+              if (!blockedByOpenRow()) void saveDraft();
             }}
             disabled={busy}
           >
@@ -525,7 +524,7 @@ function DraftReview({ record, info, followUps }: Loaded) {
           <Button
             variant={confirming ? "secondary" : "primary"}
             onClick={(event) => {
-              if (blockedByOpenRow("card")) return;
+              if (blockedByOpenRow()) return;
               confirmButtonRef.current = event.currentTarget;
               setConfirming(true);
             }}
@@ -534,11 +533,6 @@ function DraftReview({ record, info, followUps }: Loaded) {
             <Check aria-hidden="true" className="size-5" />
             Confirm record
           </Button>
-          {rowEdits.blocked === "card" && (
-            <p role="alert" className="w-full text-right type-body-small text-alert-ink">
-              {openRowsMessage(rowEdits.open)}
-            </p>
-          )}
         </CardActionBar>
       </Card>
 
@@ -593,11 +587,6 @@ function DraftReview({ record, info, followUps }: Loaded) {
               Go back and check
             </Button>
           </div>
-          {rowEdits.blocked === "panel" && (
-            <p role="alert" className="mt-3 type-body text-alert-ink">
-              {openRowsMessage(rowEdits.open)}
-            </p>
-          )}
         </section>
       )}
     </>
@@ -605,7 +594,12 @@ function DraftReview({ record, info, followUps }: Loaded) {
 
   const side = (
     <>
-      <h2 id="original-record" className="scroll-mt-6 type-headline text-bench-ink">
+      <h2
+        ref={originalRecordRef}
+        id="original-record"
+        tabIndex={-1}
+        className="scroll-mt-6 w-fit rounded-md type-headline text-bench-ink focus:outline-[3px] focus:outline-offset-2 focus:outline-coomassie-blue"
+      >
         Your original record
       </h2>
       <Card className="mt-3">
@@ -651,7 +645,14 @@ function DraftReview({ record, info, followUps }: Loaded) {
       <h1 className="mt-6 type-display text-bench-ink">Check the draft</h1>
       <p className="mt-3 max-w-[66ch] type-body text-ink-secondary">
         Read it against{" "}
-        <a href="#original-record" className="text-coomassie-blue underline underline-offset-4">
+        <a
+          href="#original-record"
+          onClick={(event) => {
+            event.preventDefault();
+            jumpToOriginalRecord();
+          }}
+          className="text-coomassie-blue underline underline-offset-4"
+        >
           your original record
         </a>
         . LabKnow has marked what to look at first.

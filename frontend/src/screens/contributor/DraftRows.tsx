@@ -46,6 +46,12 @@ function EditActions({ onSave, onCancel, children }: { onSave: () => void; onCan
   );
 }
 
+/** The refusal under an open row's actions, shown when a Save or Confirm press was refused. */
+function BlockedNotice({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p role="alert" className="mt-2 type-body-small text-alert-ink">{message}</p>;
+}
+
 /**
  * Tells the page whether this row is open for editing. The page refuses Save and Confirm while a
  * row is open, so typed text is never dropped. A row that unmounts while open reports closed.
@@ -77,6 +83,8 @@ export type TextRowProps = RowNumbers & {
   valueClassName?: string;
   onSave: (value: string) => void;
   onEditingChange: (open: boolean) => void;
+  /** Shown under the row's actions while the row is open. */
+  blockedMessage?: string;
 };
 
 /** A single-value row (procedure, based on, what went wrong): read-only text, or one input to edit. */
@@ -91,6 +99,7 @@ export function TextRow({
   valueClassName = "type-body",
   onSave,
   onEditingChange,
+  blockedMessage,
   flagKeys,
   numbers,
   onKeep,
@@ -135,6 +144,7 @@ export function TextRow({
           }
         </Field>
         <EditActions onSave={save} onCancel={cancel} />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -159,10 +169,12 @@ export function TagsRow({
   tags,
   onSave,
   onEditingChange,
+  blockedMessage,
 }: {
   tags: string[];
   onSave: (tags: string[]) => void;
   onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
@@ -186,6 +198,7 @@ export function TagsRow({
           }}
           onCancel={() => setEditing(false)}
         />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -227,12 +240,14 @@ export function ContributorsRow({
   me,
   onSave,
   onEditingChange,
+  blockedMessage,
 }: {
   contributors: string[];
   uploader: string;
   me: string | null;
   onSave: (contributors: string[]) => void;
   onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
 }) {
   const { members, error: membersError } = useMembers();
   const [editing, setEditing] = useState(false);
@@ -296,6 +311,7 @@ export function ContributorsRow({
           <p className="mt-2 type-body-small text-alert-ink">Couldn't load the member list.</p>
         )}
         <EditActions onSave={() => { onSave(list); setEditing(false); }} onCancel={() => setEditing(false)} />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -323,6 +339,7 @@ export function ChangeRow({
   onSave,
   onRemoveChange,
   onEditingChange,
+  blockedMessage,
   flagKeys,
   numbers,
   onKeep,
@@ -334,6 +351,7 @@ export function ChangeRow({
   onSave: (what: string, reason: string | null) => void;
   onRemoveChange: () => void;
   onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
 }) {
   const [editing, setEditing] = useState(startEditing);
   // A change added in this session and never saved: Cancel removes it, as it has no earlier state.
@@ -386,6 +404,7 @@ export function ChangeRow({
             Remove this change
           </Button>
         </EditActions>
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
