@@ -14,6 +14,12 @@ uv sync
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
+To load the six made-up records in `samples/records/` as confirmed, searchable records (safe to run twice):
+
+```sh
+uv run python -m app.retrieval.seed
+```
+
 Open <http://127.0.0.1:8000/docs> to try the routes: `POST /api/infos`, then `POST /api/records/{id}/confirm`, then `POST /api/ask` with a word from the title.
 
 Settings come from environment variables or a `.env` file in the **repo root** (copy [`.env.example`](../.env.example)). The database goes to `data/` (git-ignored). With the default `LLM_BACKEND=fake`, nothing needs a model server. For a real model, see [Model server](#model-server).
@@ -58,7 +64,7 @@ uv run pytest -q
 |---|---|---|
 | `app/models.py` | Shared data structures: the contract. Changes need every owner's review. | Scaffold |
 | `app/main.py`, `app/config.py`, `app/llm.py`, `app/api/` | App, settings, LLM client, HTTP routes | Scaffold, then each part adds its routes |
-| `app/db.py`, `app/retrieval/` | SQLite storage, FTS5 search | Part A |
+| `app/db.py`, `app/retrieval/` | SQLite storage, FTS5 search, contributor suggestion, sample seeder | Part A |
 | `app/encoder/` | **Stub** encoder (Part B also adds `app/ingest/`) | Part B |
 | `app/decoder/` | **Stub** decoder | Part C |
 | `../frontend/` | Not started | Part D |

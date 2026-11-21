@@ -1,10 +1,11 @@
-"""Tests for search over confirmed records (app/retrieval/)."""
+"""Tests for search, the contributor suggestion and the sample seeder (app/retrieval/)."""
 
 import sqlite3
 
 from app import db
 from app.models import Change, RecordDraft
 from app.retrieval import service as retrieval
+from app.retrieval.seed import seed
 
 TRANSFORMATION = RecordDraft(
     procedure="Transformation of strain X with plasmid P",
@@ -65,3 +66,39 @@ def test_query_syntax_and_stopwords_are_safe(conn: sqlite3.Connection) -> None:
     assert retrieval.search(conn, 'strain "X" AND (NOT*) -- OR NEAR') != []
     assert retrieval.search(conn, "What did they do?") == []
     assert retrieval.search(conn, "?!") == []
+
+
+def test_suggest_contributor(conn: sqlite3.Connection) -> None:
+    _add(conn, TRANSFORMATION)
+    _add(conn, RecordDraft(procedure="Colony PCR with primer pair Q", contributors=["Bea Lin"]))
+    assert retrieval.suggest_contributor(conn, "Why did the cells clump?") == "Alex Chen"
+    assert retrieval.suggest_contributor(conn, "colony PCR bands") == "Bea Lin"
+
+
+def test_suggest_contributor_none_when_not_relevant_enough(conn: sqlite3.Connection) -> None:
+    _add(conn, TRANSFORMATION)
+    assert retrieval.suggest_contributor(conn, "zebrafish injection") is None
+    # One keyword of two is not more than half.
+    assert retrieval.suggest_contributor(conn, "zebrafish transformation") is None
+    assert retrieval.suggest_contributor(conn, "Who can help?") is None
+
+
+def test_suggest_contributor_excludes_the_requester(conn: sqlite3.Connection) -> None:
+    _add(conn, TRANSFORMATION)
+    question = "strain X transformation"
+    assert retrieval.suggest_contributor(conn, question, exclude="Alex Chen") is None
+    _add(conn, RecordDraft(procedure="Colony PCR on strain X transformants", contributors=["Bea"]))
+    assert retrieval.suggest_contributor(conn, question, exclude="Alex Chen") == "Bea"
+    assert retrieval.suggest_contributor(conn, question, exclude="Bea") == "Alex Chen"
+    # Several names: the requester and someone already asked (D3-5).
+    assert retrieval.suggest_contributor(conn, question, exclude=["Alex Chen"]) == "Bea"
+    assert retrieval.suggest_contributor(conn, question, exclude=["Alex Chen", "Bea"]) is None
+
+
+def test_seed_loads_samples_once(conn: sqlite3.Connection) -> None:
+    assert seed(conn) == 6
+    assert seed(conn) == 0
+    assert len(db.list_records(conn, status="confirmed")) == 6
+    hits = retrieval.search(conn, "Western blot transfer of a large protein")
+    assert hits[0].record.contributors == ["Dana Huang"]
+    assert retrieval.suggest_contributor(conn, "miniprep low yield") == "Chris Wu"

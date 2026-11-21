@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import db, llm
-from app.api import ask, health, infos, records
+from app.api import ask, health, infos, records, suggest
 from app.config import Settings, get_settings
 
 
@@ -39,7 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """The LLM is unreachable or unusable. The client may retry."""
         return JSONResponse(status_code=503, content={"detail": str(exc)})
 
-    for module in (health, infos, records, ask):
+    for module in (health, infos, records, ask, suggest):
         app.include_router(module.router, prefix="/api")
     return app
 

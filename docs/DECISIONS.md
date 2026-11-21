@@ -36,6 +36,23 @@
 **Alternative rejected:** AND of all keywords (one extra word in the question would hide the right record). Embeddings stay the fallback if paraphrased questions are missed (architecture §4).
 **Led by:** Tommy
 
+## 2026-11-20 — Part A: "relevant enough" contributor, and evidence for the evaluation
+**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional, repeatable `exclude` (the requester, and anyone already asked under D3-5) is never suggested, so nobody is pointed to themselves or back to someone who could not help (suggested by Darius in the #18 review; made repeatable for the frontend in the #20 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
+**Why:** Architecture §6 asks for a written threshold. A keyword share is readable and does not depend on the number of records, unlike a fixed BM25 score.
+**Alternative rejected:** A fixed BM25 score threshold (its scale changes with the number of records).
+**Led by:** Tommy
+
+## 2026-11-20 — Merge plan for Nov 21 (CP2 item 10) — proposal, to be agreed
+**What:** On merge day, the steward (李原誌) merges in dependency order, and each PR is brought up to date with the current `main` (merge `main` into the branch, which avoids force-pushing shared branches, or rebase) and passes `ruff` and `pytest` before it is merged:
+1. Any `models.py` change, reviewed by every owner (none planned).
+2. Shared fixes first, for example `llm.py` (#16) and the fake-LLM and test-settings fixes asked for on #15, so every later PR is tested the same way.
+3. Part A PRs (search, then suggestion and seed). Parts B and C use only `search()` and `index()`, whose signatures do not change.
+4. Part B PRs (files, follow-ups), then Part C PRs (decoder, discussions). Discussions go through B's encoder.
+5. Part D last, against the merged API.
+Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C adds discussion infos; Tommy reviews every SQL change), `main.py` (one router line per part), `tests/test_api_flow.py` (each part appends its own numbered steps) and `docs/DECISIONS.md` (append only). Conflicts there are resolved by the later PR's author.
+**Why:** Merging in dependency order keeps `main` runnable after every merge, so the user tests on Nov 21–22 run on a working build.
+**Led by:** Tommy
+
 ## 2026-11-21 — Code steward: 李原誌
 **What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).

@@ -48,6 +48,17 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     assert unknown.json()["answer"]["kind"] == "insufficient"
     assert unknown.json()["sources"] == []
 
+    # 5. Bea asks for someone to help (D3-3): Alex for strain X, nobody for zebrafish.
+    suggest = client.get("/api/suggest-contributor", params={"q": "Why did strain X clump?"})
+    assert suggest.json() == {"contributor": ALEX}
+    params = {"q": "Why did strain X clump?", "exclude": ALEX}
+    assert client.get("/api/suggest-contributor", params=params).json() == {"contributor": None}
+    params = {"q": "Why did strain X clump?", "exclude": [BEA, " "]}  # repeated; blank ignored
+    assert client.get("/api/suggest-contributor", params=params).json() == {"contributor": ALEX}
+    nobody = client.get("/api/suggest-contributor", params={"q": "zebrafish injection"})
+    assert nobody.json() == {"contributor": None}
+    assert client.get("/api/suggest-contributor", params={"q": " "}).status_code == 422
+
 
 def test_drafts_are_not_searchable(client: TestClient) -> None:
     _paste(client)
