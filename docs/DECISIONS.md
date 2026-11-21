@@ -39,3 +39,7 @@
 ## 2026-11-21 — Code steward: 李原誌
 **What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-22 — Code steward: Benedict
+**What:** Benedict is the code steward for Sun Nov 22 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
