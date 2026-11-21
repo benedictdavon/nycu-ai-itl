@@ -39,3 +39,9 @@
 ## 2026-11-21 — Code steward: 李原誌
 **What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-22 — Part B: the encoder, follow-up questions and the text limit
+**What:** `encode()` sends the record and the answers so far to the model, which always returns a draft and, if it has one, a question (`encoder/service.py`). Code then decides: a question is asked only for an upload with fewer than two answered questions; otherwise it goes into `gaps` and the draft is kept (D2-3b). The uploader is always the first contributor, and the upload's tags are kept. Questions live in a `follow_ups` table; an answer is stored only after the model call succeeds, so a 503 leaves the question open to retry. Pasted text over 12,000 characters is refused with 413.
+**Why:** Asking for a draft every time means the two-question limit and discussions (no questions) need no second model call: code just drops the question. The model server has an 8192-token context; lab text with numbers and units is about 3-4 characters per token, so 12,000 characters leave room for the prompt, two answers and the reply.
+**Alternative rejected:** Asking the model for either a question or a draft (a third question would need a second call to get a draft); truncating long text silently (the draft would miss part of the record without anyone knowing).
+**Led by:** 李原誌

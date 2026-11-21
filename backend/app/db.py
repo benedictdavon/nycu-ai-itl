@@ -8,7 +8,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from app.models import Info, Record, RecordDraft
+from app.models import FollowUp, Info, Record, RecordDraft
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS infos (
@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS infos (
   link TEXT,
   project_tags TEXT NOT NULL DEFAULT '[]',          -- JSON array
   file_path TEXT,                                   -- original file, if one was uploaded
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- The encoder's follow-up questions (D2-3b), oldest first. answer is NULL while one is open.
+CREATE TABLE IF NOT EXISTS follow_ups (
+  id INTEGER PRIMARY KEY,
+  info_id INTEGER NOT NULL REFERENCES infos(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  answer TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS records (
@@ -141,6 +149,38 @@ def confirm_record(conn: sqlite3.Connection, record_id: int, confirmed_by: str) 
     if cursor.rowcount == 0:
         raise ValueError(f"record {record_id} is not a draft")
     return _require(get_record(conn, record_id))
+
+
+def get_record_for_info(conn: sqlite3.Connection, info_id: int) -> Record | None:
+    """The M drafted from an Info, if there is one yet (D1-2: at most one)."""
+    row = conn.execute("SELECT * FROM records WHERE info_id = ?", (info_id,)).fetchone()
+    return None if row is None else _record_from_row(row)
+
+
+def list_follow_ups(conn: sqlite3.Connection, info_id: int) -> list[FollowUp]:
+    """An Info's follow-up questions, oldest first."""
+    rows = conn.execute(
+        "SELECT question, answer FROM follow_ups WHERE info_id = ? ORDER BY id", (info_id,)
+    )
+    return [FollowUp(question=row["question"], answer=row["answer"]) for row in rows]
+
+
+def insert_follow_up(conn: sqlite3.Connection, info_id: int, question: str) -> None:
+    """Store a new, unanswered follow-up question."""
+    conn.execute("INSERT INTO follow_ups (info_id, question) VALUES (?, ?)", (info_id, question))
+    conn.commit()
+
+
+def answer_follow_up(conn: sqlite3.Connection, info_id: int, answer: str) -> None:
+    """Answer the Info's open question. Raises ValueError if none is open."""
+    cursor = conn.execute(
+        "UPDATE follow_ups SET answer = ? WHERE id ="
+        " (SELECT MAX(id) FROM follow_ups WHERE info_id = ?) AND answer IS NULL",
+        (answer, info_id),
+    )
+    conn.commit()
+    if cursor.rowcount == 0:
+        raise ValueError(f"info {info_id} has no open follow-up question")
 
 
 def list_records(

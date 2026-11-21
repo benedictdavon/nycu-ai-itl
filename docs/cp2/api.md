@@ -9,7 +9,7 @@ All JSON unless noted. Errors use FastAPI's default `{"detail": ...}`. Every end
 | Method and path | Request | Response | Errors |
 |---|---|---|---|
 | `GET /api/health` | — | `Health` | — |
-| `POST /api/infos` | **multipart/form-data**: `contributor`*, `title`*, `text`*, `link`?, `tags`? (comma-separated) | `EncodeState` (always a draft for now) | 422 blank field; 503 |
+| `POST /api/infos` | **multipart/form-data**: `contributor`*, `title`*, `text`*, `link`?, `tags`? (comma-separated) | `EncodeState`: a question (`result.kind == "question"`, also the last, unanswered entry in `follow_ups`) or a draft with `record_id` | 422 blank field; 413 `text` over 12,000 characters; 503 |
 | `GET /api/records` | query `status`?, `contributor`? | `Record[]`, newest first | 422 bad status |
 | `GET /api/records/{id}` | — | `RecordView` | 404 |
 | `PUT /api/records/{id}` | `RecordDraft` | `Record` | 404; 409 already confirmed; 422 |
@@ -27,8 +27,8 @@ The request and response models already exist in `models.py`. The owner of each 
 | Method and path | Request | Response | Part |
 |---|---|---|---|
 | `POST /api/infos` with `file` | multipart, `file` instead of `text` | `EncodeState`, possibly a question | B |
-| `GET /api/infos/{id}` | — | `EncodeState` (current state, for page reloads) | B |
-| `POST /api/infos/{id}/follow-ups` | `FollowUpAnswer` | `EncodeState` | B |
+| `GET /api/infos/{id}` | — | `EncodeState` (current state, for page reloads). 404; 409 if the first encoder call failed | B |
+| `POST /api/infos/{id}/follow-ups` | `FollowUpAnswer` | `EncodeState`: the next question, or the draft after at most two answers. 404; 409 no open question; 422 blank; 503 (the question stays open, retry) | B |
 | `GET /api/infos/{id}/file` | — | the original file | B |
 | `GET /api/suggest-contributor` | query `q`* | `SuggestResponse` | A |
 | `POST /api/discussions` | `DiscussionCreate` | `EncodeState` (always a draft) | C |
