@@ -30,7 +30,7 @@ The request and response models already exist in `models.py`. The owner of each 
 | `GET /api/infos/{id}` | — | `EncodeState` (current state, for page reloads) | B |
 | `POST /api/infos/{id}/follow-ups` | `FollowUpAnswer` | `EncodeState` | B |
 | `GET /api/infos/{id}/file` | — | the original file | B |
-| `GET /api/suggest-contributor` | query `q`* | `SuggestResponse` | A |
+| `GET /api/suggest-contributor` | query `q`*, `exclude`? (repeatable, for example `?exclude=A&exclude=B`: the requester and anyone already asked; never suggested) | `SuggestResponse`; `contributor` is `null` when no record is relevant enough (rule in `retrieval/service.py`, `suggest_contributor`). Errors: 422 missing or blank `q` | A |
 | `POST /api/discussions` | `DiscussionCreate` | `EncodeState` (always a draft) | C |
 | `GET /api/members` | — | `string[]` from `samples/members.json` | D |
 
@@ -140,6 +140,6 @@ class DiscussionCreate(BaseModel):
 
 class Health(BaseModel):
     status: Literal["ok"]
-    llm_backend: Literal["fake", "ollama"]
+    llm_backend: Literal["fake", "llama_server"]
     llm_model: str
 ```

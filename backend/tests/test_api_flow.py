@@ -1,6 +1,6 @@
 """The walking skeleton: paste a record, review and confirm the draft, ask about it.
 
-Fake LLM and stub encoder, decoder and search. All names and records are made up.
+Fake LLM, stub encoder, real search. All names and records are made up.
 """
 
 from fastapi.testclient import TestClient
@@ -38,7 +38,7 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     assert view["info"]["text"] == TEXT
     assert view["record"]["troubleshooting"] == edited["troubleshooting"]
 
-    # 3. Bea asks; the answer cites Alex's record.
+    # 3. Bea asks; the fake LLM cites the top hit, Alex's record.
     asked = client.post("/api/ask", json={"question": "strain X transformation", "requester": BEA})
     assert asked.json()["answer"]["kind"] == "answered"
     assert [source["id"] for source in asked.json()["sources"]] == [record_id]
@@ -47,6 +47,17 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     unknown = client.post("/api/ask", json={"question": "zebrafish injection", "requester": BEA})
     assert unknown.json()["answer"]["kind"] == "insufficient"
     assert unknown.json()["sources"] == []
+
+    # 5. Bea asks for someone to help (D3-3): Alex for strain X, nobody for zebrafish.
+    suggest = client.get("/api/suggest-contributor", params={"q": "Why did strain X clump?"})
+    assert suggest.json() == {"contributor": ALEX}
+    params = {"q": "Why did strain X clump?", "exclude": ALEX}
+    assert client.get("/api/suggest-contributor", params=params).json() == {"contributor": None}
+    params = {"q": "Why did strain X clump?", "exclude": [BEA, " "]}  # repeated; blank ignored
+    assert client.get("/api/suggest-contributor", params=params).json() == {"contributor": ALEX}
+    nobody = client.get("/api/suggest-contributor", params={"q": "zebrafish injection"})
+    assert nobody.json() == {"contributor": None}
+    assert client.get("/api/suggest-contributor", params={"q": " "}).status_code == 422
 
 
 def test_drafts_are_not_searchable(client: TestClient) -> None:

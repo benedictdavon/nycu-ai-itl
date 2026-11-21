@@ -14,6 +14,58 @@
 **Why:** Keeps the repo root tidy and gives each doc one canonical location. We rejected keeping `DECISIONS.md` in `.github/`, because GitHub gives it no special treatment there, and at the root, because it clutters the top level.
 **Led by:** Darius Lung
 
+## 2026-11-19 — Model client speaks llama-server's OpenAI-compatible API; no Ollama
+**What:** `app/llm.py` calls `/v1/chat/completions` (temperature 0, JSON schema via `response_format`, Qwen3 thinking off). `LLM_BACKEND` is `fake` or `llama_server`; Ollama is removed. The demo-laptop fallback is a small local `llama-server`, not Ollama.
+**Why:** One protocol for the main server and the fallback, and no extra runtime to install and test. A schema-shaped reply is only a valid shape, so the citation check and question limit stay in code.
+**Alternative rejected:** Keeping Ollama as a second backend (a second API to maintain and test, and the team prefers not to depend on it).
+**Led by:** Darius Lung
+
+## 2026-11-19 — When the decoder says "not enough"
+**What:** An answer is `insufficient` when search returns no hits (no model call), when the model finds the hits do not answer the question, or when no cited record survives the citation check. A partial answer, or one from a record about a different case, is `answered` with the gaps in `uncertainties`. The rule is in `architecture.md` §4.
+**Why:** Answers 03's open question with rules that code can enforce where possible: no hits and no valid citation are checked in code, so a model that ignores the prompt still cannot answer without a source. Partial answers stay useful to the requester, with what is missing said plainly.
+**Alternative rejected:** A search score threshold decided by Part C (the score belongs to Part A's search, which is not built yet); `insufficient` for any partial answer (hides useful records).
+**Led by:** Darius Lung
+
+## 2026-11-20 — Code steward: Tommy
+**What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-20 — A draft can be confirmed with empty gaps
+**What:** A contributor can confirm a draft while some `gaps` are still empty. Empty gaps stay in `gaps`, and the record view shows them in the "Not recorded: Ask {contributor} if you need these" panel. Before confirming, the "Before you confirm" panel lists each empty gap ("Labmates will see them as not recorded"), so confirming with gaps is a deliberate choice.
+**Why:** Contributors often don't know every detail, and blocking confirmation would keep useful records unsearchable (PRODUCT.md principle 3: keep the contributor's extra work small). Showing the gaps keeps documented facts visibly apart from missing ones (principle 2). We rejected requiring every gap to be filled before confirming, because it pushes contributors to guess or to leave drafts unconfirmed.
+**Led by:** Benedict
+
+## 2026-11-20 — Part A: keyword search with FTS5
+**What:** `search()` is SQLite FTS5 over the confirmed `M` only (procedure, based on, changes with their reasons, troubleshooting, tags, contributors), with the `porter unicode61` tokenizer and BM25 ranking. The question becomes an OR of its keywords, after a short English stopword list (`retrieval/service.py`). Each keyword is quoted, so user text never acts as FTS5 syntax. `index()` writes a record into the index when it is confirmed.
+**Why:** Architecture §4 chose FTS5 with `porter`. Keyword search with stemming is enough for six to a few dozen English records, needs no extra model, and is easy to explain. OR with stopwords removed finds a record that shares any meaningful word with the question; BM25 puts the record with more and rarer shared words first.
+**Alternative rejected:** AND of all keywords (one extra word in the question would hide the right record). Embeddings stay the fallback if paraphrased questions are missed (architecture §4).
+**Led by:** Tommy
+
+## 2026-11-20 — Part A: "relevant enough" contributor, and evidence for the evaluation
+**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional, repeatable `exclude` (the requester, and anyone already asked under D3-5) is never suggested, so nobody is pointed to themselves or back to someone who could not help (suggested by Darius in the #18 review; made repeatable for the frontend in the #20 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
+**Why:** Architecture §6 asks for a written threshold. A keyword share is readable and does not depend on the number of records, unlike a fixed BM25 score.
+**Alternative rejected:** A fixed BM25 score threshold (its scale changes with the number of records).
+**Led by:** Tommy
+
+## 2026-11-20 — Merge plan for Nov 21 (CP2 item 10) — proposal, to be agreed
+**What:** On merge day, the steward (李原誌) merges in dependency order, and each PR is brought up to date with the current `main` (merge `main` into the branch, which avoids force-pushing shared branches, or rebase) and passes `ruff` and `pytest` before it is merged:
+1. Any `models.py` change, reviewed by every owner (none planned).
+2. Shared fixes first, for example `llm.py` (#16) and the fake-LLM and test-settings fixes asked for on #15, so every later PR is tested the same way.
+3. Part A PRs (search, then suggestion and seed). Parts B and C use only `search()` and `index()`, whose signatures do not change.
+4. Part B PRs (files, follow-ups), then Part C PRs (decoder, discussions). Discussions go through B's encoder.
+5. Part D last, against the merged API.
+Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C adds discussion infos; Tommy reviews every SQL change), `main.py` (one router line per part), `tests/test_api_flow.py` (each part appends its own numbered steps) and `docs/DECISIONS.md` (append only). Conflicts there are resolved by the later PR's author.
+**Why:** Merging in dependency order keeps `main` runnable after every merge, so the user tests on Nov 21–22 run on a working build.
+**Led by:** Tommy
+
+## 2026-11-21 — Code steward: 李原誌
+**What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-22 — Code steward: Benedict
+**What:** Benedict is the code steward for Sun Nov 22 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
 ## 2026-11-20 — Check the draft: the confirm step stays an inline panel
 **What:** "Confirm record" opens the inline "Before you confirm" panel (SCREENS.md §4), which now scrolls into view and takes focus; Escape and "Go back and check" return focus to "Confirm record". Publishing still takes two clicks.
 **Why:** The panel rendered below the fold with focus left on the button, so the step looked broken (audit P1). We rejected a modal dialog, because it would change the spec for a step that needs neither interruption nor trapped focus.
