@@ -131,6 +131,23 @@ describe("Ask: not enough in the records", () => {
     expect(within(select).getByRole("option", { name: "Bea Lin" })).toBeInTheDocument();
   });
 
+  it("asks the server to leave out the requester and anyone already asked", async () => {
+    const user = userEvent.setup();
+    vi.mocked(ask).mockResolvedValueOnce(insufficient());
+    vi.mocked(suggestContributor)
+      .mockResolvedValueOnce({ contributor: "Alex Chen" })
+      .mockResolvedValueOnce({ contributor: null });
+    renderApp("/ask");
+    await askQuestion(user);
+
+    await user.click(await screen.findByRole("radio", { name: "Suggest someone" }));
+    expect(suggestContributor).toHaveBeenLastCalledWith(QUESTION, [ME]);
+
+    await user.click(await screen.findByRole("button", { name: "Not solved: ask someone else" }));
+    await user.click(screen.getByRole("radio", { name: "Suggest someone" }));
+    expect(suggestContributor).toHaveBeenLastCalledWith(QUESTION, [ME, "Alex Chen"]);
+  });
+
   it("records the person picked under 'Your open questions' as asking", async () => {
     const user = userEvent.setup();
     vi.mocked(ask).mockResolvedValueOnce(insufficient());

@@ -180,3 +180,12 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
     Follow-up 1 (guard message off-screen): on draft #4 at 1920x1080, pressing "Save draft" with "Based on" open moved focus to the input (y=503) but rendered the role="alert" message in the action bar at y=1870, off-screen. Show the message inside the open row itself, under its Save/Cancel actions: give TextRow, TagsRow, ContributorsRow and ChangeRow an optional `blockedMessage` prop rendered as `<p role="alert" className="mt-2 type-body-small text-alert-ink">`; when a press is refused, pass "Save or cancel this edit first." to every open row; keep the focus move to the first open row and the re-check on "Confirm and publish"; remove the action-bar and panel copies; update tests to assert the alert is inside the open row and no PUT/POST is made.
     
     Follow-up 2 (anchor link drops state): the lead link `<a href="#original-record">` performed a hash navigation that replaced the history state, so `fromAdd` became false and the "Record added → Check the draft" progress header disappeared. Keep the href, but on click call preventDefault, scroll the side heading into view (auto under prefers-reduced-motion) and focus it (tabIndex -1, preventScroll). Add a test that arrives from Add, clicks the link, and asserts the progress list stays, the heading has focus and scrollIntoView was called.
+
+## Suggest: leave out the requester and anyone asked (branch `fix/frontend-ui-audit`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 wrote the change and its tests directly (no subagent). The human (benedictdavon) asked for it.
+- **Why:** Tommy's blocking point 2 in the #20 review. The backend's repeatable `exclude` came in #18.
+
+### Prompt
+
+    merged, whats next
