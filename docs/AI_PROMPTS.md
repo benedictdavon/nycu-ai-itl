@@ -15,7 +15,7 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
     You are the implementer for a UI fix pass on LabKnow's frontend (Part D). An orchestrator reviews your work. Phase 1 of 3: harden. Do only this phase, no extras.
     
     ## Where and rules
-    - Worktree (absolute path, run everything here): C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21
+    - Worktree: <the git worktree for this branch> (run everything there).
     - Edit only files under `frontend/`. Do NOT touch `backend/`, `docs/`, `models.py`. No git commands (no commit, stash, checkout). Do not start or stop any server. Do not run `npm run build` (the orchestrator does).
     - Read `CLAUDE.md` (repo root) and `frontend/DESIGN.md` first, then every file you change and its tests before editing. Match the surrounding style (Tailwind token classes such as `text-coomassie-blue`, `type-label`; comments explain why).
     - Do not add features, options or abstractions beyond what is listed. Prefer the simplest change. Re-read your diff before reporting and remove anything not needed.
@@ -81,7 +81,7 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
 
 #### Brief to the implementer
 
-    Phase 2 of 3: polish (P2). Same rules as Phase 1: worktree C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file (and its test) before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
+    Phase 2 of 3: polish (P2). Same rules as Phase 1: same worktree, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file (and its test) before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
     
     Design rules that apply (frontend/DESIGN.md):
     - Two Meanings Rule: Coomassie Blue (and its wash) only means "confirmed, cited or the main action". Do NOT add blue or coomassie-wash as a hover colour on secondary/text/nav/chip/card elements. (Primary already deepens to coomassie-deep; keep it.)
@@ -133,7 +133,7 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
 
 #### Brief to the implementer
 
-    Phase 3 of 3: layout and adapt (P2/P3). Same rules: worktree C:\Users\Davon\Desktop\Davon\Project\T3-worktree\nycu-ai-itl\t3-63b6d57e-96783d79fd161c21, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file and its test before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
+    Phase 3 of 3: layout and adapt (P2/P3). Same rules: same worktree, edit only under `frontend/`, no git, no servers, no `npm run build`. Do only what is listed, no extras. Read each file and its test before editing. When done, run `npm run typecheck`, `npm run lint`, `npm test` in `frontend/` and report files changed, what each change does, tests added/updated, and exact results.
     
     Relevant DESIGN.md rules (frontend/DESIGN.md "Layout", "Typography"): container max 1160px; two-column pattern main `flex: 999 1 560px`, side `flex: 1 1 320px`, 32px gap (so at full width the main column is 1112 - 32 - 320 = 760px); reading text ≤ 66ch; more space above a heading than below; one display heading per screen.
     
@@ -174,3 +174,9 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
 #### Resume after a server restart
 
     Resume after interruption: your Phase 3 run was interrupted by a server restart before you reported. Partial edits are on disk; do not revert them. Run `git diff` (read-only) and compare it item by item against the Phase 3 brief, finish whatever is missing or half-done, make no other changes, run typecheck, lint and test, and report every brief item with done/not done and file:line, the text buttons changed under item 9, and the exact results.
+
+### Follow-up fixes from the final check
+
+    Follow-up 1 (guard message off-screen): on draft #4 at 1920x1080, pressing "Save draft" with "Based on" open moved focus to the input (y=503) but rendered the role="alert" message in the action bar at y=1870, off-screen. Show the message inside the open row itself, under its Save/Cancel actions: give TextRow, TagsRow, ContributorsRow and ChangeRow an optional `blockedMessage` prop rendered as `<p role="alert" className="mt-2 type-body-small text-alert-ink">`; when a press is refused, pass "Save or cancel this edit first." to every open row; keep the focus move to the first open row and the re-check on "Confirm and publish"; remove the action-bar and panel copies; update tests to assert the alert is inside the open row and no PUT/POST is made.
+    
+    Follow-up 2 (anchor link drops state): the lead link `<a href="#original-record">` performed a hash navigation that replaced the history state, so `fromAdd` became false and the "Record added → Check the draft" progress header disappeared. Keep the href, but on click call preventDefault, scroll the side heading into view (auto under prefers-reduced-motion) and focus it (tabIndex -1, preventScroll). Add a test that arrives from Add, clicks the link, and asserts the progress list stays, the heading has focus and scrollIntoView was called.
