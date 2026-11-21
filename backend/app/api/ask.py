@@ -15,6 +15,6 @@ def ask(body: AskRequest, conn: ConnDep) -> AskResponse:
     hits = retrieval.search(conn, body.question, k=5)
     answer = decoder.answer(body.question, hits, body.hint_mode)
     by_id = {hit.record.id: hit.record for hit in hits}
-    # Only records that were in the hits can be sources. Part C adds the full citation check.
+    # The decoder already ran the citation check, so every cited id is one of the hits.
     sources = [by_id[record_id] for record_id in answer.cited_record_ids if record_id in by_id]
     return AskResponse(answer=answer, sources=sources)

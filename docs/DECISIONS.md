@@ -20,6 +20,12 @@
 **Alternative rejected:** Keeping Ollama as a second backend (a second API to maintain and test, and the team prefers not to depend on it).
 **Led by:** Darius Lung
 
+## 2026-11-19 — When the decoder says "not enough"
+**What:** An answer is `insufficient` when search returns no hits (no model call), when the model finds the hits do not answer the question, or when no cited record survives the citation check. A partial answer, or one from a record about a different case, is `answered` with the gaps in `uncertainties`. The rule is in `architecture.md` §4.
+**Why:** Answers 03's open question with rules that code can enforce where possible: no hits and no valid citation are checked in code, so a model that ignores the prompt still cannot answer without a source. Partial answers stay useful to the requester, with what is missing said plainly.
+**Alternative rejected:** A search score threshold decided by Part C (the score belongs to Part A's search, which is not built yet); `insufficient` for any partial answer (hides useful records).
+**Led by:** Darius Lung
+
 ## 2026-11-20 — Code steward: Tommy
 **What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
@@ -46,3 +52,7 @@
 Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C adds discussion infos; Tommy reviews every SQL change), `main.py` (one router line per part), `tests/test_api_flow.py` (each part appends its own numbered steps) and `docs/DECISIONS.md` (append only). Conflicts there are resolved by the later PR's author.
 **Why:** Merging in dependency order keeps `main` runnable after every merge, so the user tests on Nov 21–22 run on a working build.
 **Led by:** Tommy
+
+## 2026-11-21 — Code steward: 李原誌
+**What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
