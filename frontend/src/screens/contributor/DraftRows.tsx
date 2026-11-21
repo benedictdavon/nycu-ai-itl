@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AddChip, PersonChip, TagChip } from "../../components/Chip";
 import { Field } from "../../components/Field";
 import { Button } from "../../components/ui/button";
@@ -24,7 +24,7 @@ export type RowNumbers = {
 function RowHeader({ label, onEdit }: { label: string; onEdit: () => void }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <h3 className="type-label text-ink-secondary">{label}</h3>
+      <h2 className="type-label text-ink-secondary">{label}</h2>
       <Button variant="text" aria-label={`Edit ${label}`} onClick={onEdit} className="-my-2 -mr-3">
         Edit
       </Button>
@@ -46,6 +46,29 @@ function EditActions({ onSave, onCancel, children }: { onSave: () => void; onCan
   );
 }
 
+/** The refusal under an open row's actions, shown when a Save or Confirm press was refused. */
+function BlockedNotice({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p role="alert" className="mt-2 type-body-small text-alert-ink">{message}</p>;
+}
+
+/**
+ * Tells the page whether this row is open for editing. The page refuses Save and Confirm while a
+ * row is open, so typed text is never dropped. A row that unmounts while open reports closed.
+ */
+function useReportOpen(open: boolean, onOpenChange: (open: boolean) => void) {
+  // The page passes a new callback on every render. Keeping the latest one in a ref means the
+  // effect below runs only when `open` changes, not on every render.
+  const latest = useRef(onOpenChange);
+  useEffect(() => {
+    latest.current = onOpenChange;
+  });
+  useEffect(() => {
+    latest.current(open);
+    return () => latest.current(false);
+  }, [open]);
+}
+
 export type TextRowProps = RowNumbers & {
   label: string;
   value: string | null;
@@ -59,6 +82,9 @@ export type TextRowProps = RowNumbers & {
   requiredMessage?: string;
   valueClassName?: string;
   onSave: (value: string) => void;
+  onEditingChange: (open: boolean) => void;
+  /** Shown under the row's actions while the row is open. */
+  blockedMessage?: string;
 };
 
 /** A single-value row (procedure, based on, what went wrong): read-only text, or one input to edit. */
@@ -72,6 +98,8 @@ export function TextRow({
   requiredMessage,
   valueClassName = "type-body",
   onSave,
+  onEditingChange,
+  blockedMessage,
   flagKeys,
   numbers,
   onKeep,
@@ -80,6 +108,7 @@ export function TextRow({
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
+  useReportOpen(editing, onEditingChange);
 
   function startEdit() {
     setText(value ?? "");
@@ -104,7 +133,7 @@ export function TextRow({
 
   if (editing) {
     return (
-      <div className="py-4">
+      <div className="py-4" data-editing>
         <Field label={label} optional={optional} hint={hint} error={error}>
           {(control) =>
             multiline ? (
@@ -115,6 +144,7 @@ export function TextRow({
           }
         </Field>
         <EditActions onSave={save} onCancel={cancel} />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -135,9 +165,20 @@ export function TextRow({
 }
 
 /** Project tags: chips to read, one comma-separated input to edit. */
-export function TagsRow({ tags, onSave }: { tags: string[]; onSave: (tags: string[]) => void }) {
+export function TagsRow({
+  tags,
+  onSave,
+  onEditingChange,
+  blockedMessage,
+}: {
+  tags: string[];
+  onSave: (tags: string[]) => void;
+  onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
+  useReportOpen(editing, onEditingChange);
 
   function startEdit() {
     setText(formatTags(tags));
@@ -146,7 +187,7 @@ export function TagsRow({ tags, onSave }: { tags: string[]; onSave: (tags: strin
 
   if (editing) {
     return (
-      <div className="py-4">
+      <div className="py-4" data-editing>
         <Field label="Project tags" hint="Separate tags with commas">
           {(control) => <Input {...control} value={text} onChange={(e) => setText(e.target.value)} />}
         </Field>
@@ -157,6 +198,7 @@ export function TagsRow({ tags, onSave }: { tags: string[]; onSave: (tags: strin
           }}
           onCancel={() => setEditing(false)}
         />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -197,16 +239,21 @@ export function ContributorsRow({
   uploader,
   me,
   onSave,
+  onEditingChange,
+  blockedMessage,
 }: {
   contributors: string[];
   uploader: string;
   me: string | null;
   onSave: (contributors: string[]) => void;
+  onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
 }) {
   const { members, error: membersError } = useMembers();
   const [editing, setEditing] = useState(false);
   const [list, setList] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
+  useReportOpen(editing, onEditingChange);
 
   function startEdit() {
     setList(contributors.includes(uploader) ? [...contributors] : [uploader, ...contributors]);
@@ -225,8 +272,8 @@ export function ContributorsRow({
   if (editing) {
     const candidates = members.filter((member) => !list.includes(member));
     return (
-      <div className="py-4">
-        <h3 className="type-label text-ink-secondary">Contributors</h3>
+      <div className="py-4" data-editing>
+        <h2 className="type-label text-ink-secondary">Contributors</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {list.map((name) =>
             name === uploader ? (
@@ -264,6 +311,7 @@ export function ContributorsRow({
           <p className="mt-2 type-body-small text-alert-ink">Couldn't load the member list.</p>
         )}
         <EditActions onSave={() => { onSave(list); setEditing(false); }} onCancel={() => setEditing(false)} />
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }
@@ -290,6 +338,8 @@ export function ChangeRow({
   startEditing,
   onSave,
   onRemoveChange,
+  onEditingChange,
+  blockedMessage,
   flagKeys,
   numbers,
   onKeep,
@@ -300,6 +350,8 @@ export function ChangeRow({
   startEditing: boolean;
   onSave: (what: string, reason: string | null) => void;
   onRemoveChange: () => void;
+  onEditingChange: (open: boolean) => void;
+  blockedMessage?: string;
 }) {
   const [editing, setEditing] = useState(startEditing);
   // A change added in this session and never saved: Cancel removes it, as it has no earlier state.
@@ -307,6 +359,7 @@ export function ChangeRow({
   const [what, setWhat] = useState("");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | undefined>();
+  useReportOpen(editing, onEditingChange);
 
   function startEdit() {
     setWhat(change.what);
@@ -337,7 +390,7 @@ export function ChangeRow({
 
   if (editing) {
     return (
-      <div className="border-t border-hairline py-4 first:border-t-0">
+      <div className="border-t border-hairline py-4 first:border-t-0" data-editing>
         <Field label="What changed" error={error}>
           {(control) => <Input {...control} value={what} onChange={(e) => setWhat(e.target.value)} />}
         </Field>
@@ -351,6 +404,7 @@ export function ChangeRow({
             Remove this change
           </Button>
         </EditActions>
+        <BlockedNotice message={blockedMessage} />
       </div>
     );
   }

@@ -22,7 +22,7 @@ export default function WhoScreen() {
 
   return (
     <Page>
-      <div className="max-w-[560px]">
+      <div className="max-w-reading">
         <h1 className="type-display text-bench-ink">Who are you?</h1>
         <p className="mt-3 type-body text-ink-secondary">
           Pick your name. LabKnow uses it to credit the records you add and to show you drafts to
@@ -63,8 +63,10 @@ export default function WhoScreen() {
                         type="button"
                         onClick={() => pick(name)}
                         className={cn(
-                          "flex min-h-[60px] w-full cursor-pointer items-center gap-3.5 rounded-md bg-paper px-4 py-2.5 text-left text-bench-ink shadow-rest transition-shadow duration-quick ease-out enabled:hover:shadow-lift",
-                          isLast ? "border-2 border-coomassie-blue" : "border border-hairline",
+                          "flex min-h-[60px] w-full cursor-pointer items-center gap-3.5 rounded-md bg-paper px-4 py-2.5 text-left text-bench-ink shadow-rest transition-[border-color,box-shadow] duration-quick ease-out enabled:hover:shadow-lift",
+                          isLast
+                            ? "border-2 border-coomassie-blue"
+                            : "border border-hairline enabled:hover:border-field-edge",
                         )}
                       >
                         <Avatar name={name} tone={isLast ? "current" : "neutral"} />
