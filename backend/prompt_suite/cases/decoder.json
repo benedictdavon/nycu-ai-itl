@@ -1,0 +1,100 @@
+[
+  {
+    "id": "clump",
+    "about": "Typical question; the first prompt swapped cause and fix (fail-then-fix 1)",
+    "question": "Why did my cells clump after washing, and what should I change?",
+    "hint_mode": false,
+    "hits": ["R01", "R02", "R04"],
+    "expect": {
+      "kind": "answered",
+      "cites": ["R01"],
+      "contributors": ["Alex Chen"],
+      "must_include": ["wash volume"]
+    },
+    "judge": "Says the cells clumped with the SOP wash volume and doubling it was the fix, not that the wash change caused the clumping."
+  },
+  {
+    "id": "plasmid-amount",
+    "about": "A value the record gives without an old value; the model said 'increased to 50 ng' (fail-then-fix 2)",
+    "question": "Has anyone transformed strain X? How much plasmid did they use?",
+    "hint_mode": false,
+    "hits": ["R01"],
+    "expect": {
+      "kind": "answered",
+      "cites": ["R01"],
+      "contributors": ["Alex Chen"],
+      "must_include": ["50 ng"],
+      "must_not_include": ["increase", "raised", "more plasmid", "higher"]
+    }
+  },
+  {
+    "id": "no-record",
+    "about": "No relevant record among the hits: the model, not the no-hits shortcut, must say insufficient",
+    "question": "How do I inject zebrafish embryos?",
+    "hint_mode": false,
+    "hits": ["R01", "R02", "R03"],
+    "expect": {
+      "kind": "insufficient",
+      "cites": []
+    }
+  },
+  {
+    "id": "clump-hint",
+    "about": "Hint mode (D3-1a): point to the step and the person, not the fix",
+    "question": "Why did my cells clump after washing, and what should I change?",
+    "hint_mode": true,
+    "hits": ["R01", "R02", "R04"],
+    "expect": {
+      "kind": "answered",
+      "cites": ["R01"],
+      "contributors": ["Alex Chen"],
+      "must_include": ["Alex"],
+      "must_not_include": ["doubl", "twice"],
+      "no_digits": true
+    },
+    "judge": "A hint: points to the wash step and Alex's record without giving the fix."
+  },
+  {
+    "id": "competent-hint",
+    "about": "Hint mode with numbers in the record: none may reach the text",
+    "question": "My competent cells give low efficiency. What helped before?",
+    "hint_mode": true,
+    "hits": ["R01", "R04", "R06"],
+    "expect": {
+      "kind": "answered",
+      "cites": ["R04"],
+      "contributors": ["Alex Chen"],
+      "no_digits": true
+    },
+    "judge": "A hint: points to the washing of the cells without giving the fix."
+  },
+  {
+    "id": "other-case",
+    "about": "The record is about a different case: answered, with the difference as an uncertainty",
+    "question": "What annealing temperature should I use for colony PCR of a 3 kb insert?",
+    "hint_mode": false,
+    "hits": ["R02", "R03", "R04"],
+    "expect": {
+      "kind": "answered",
+      "cites": ["R02"],
+      "contributors": ["Bea Lin"],
+      "must_include": ["62"],
+      "needs_uncertainty": true
+    },
+    "judge": "An uncertainty says the record does not say it is for a 3 kb insert."
+  },
+  {
+    "id": "discussion-only",
+    "about": "Only the saved discussion (D3-4) answers it; record 01 has the fix but not the cause",
+    "question": "Is the clumping of strain X caused by the plasmid?",
+    "hint_mode": false,
+    "hits": ["R01", "D01"],
+    "expect": {
+      "kind": "answered",
+      "cites_include": ["D01"],
+      "contributors": ["Alex Chen"],
+      "must_include": ["volume"]
+    },
+    "judge": "Says the clumping came from the wash volume, not the plasmid."
+  }
+]
