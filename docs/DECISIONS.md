@@ -80,3 +80,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **What:** Single-column screens (Who, To review, Ask's main column) use a 760px reading width (`max-w-reading`), the main-column width of the two-column pattern, and the original record on Check the draft is sticky on desktop. In the Sources side card, project tags are a plain middot-separated text list instead of pills.
 **Why:** Widths differed per screen (Who 560px, To review 1160px, Ask 1112px at 1920 wide), Ask jumped when Sources appeared, and seven tag pills took four rows in a 214px column. We rejected smaller pills (still four rows) and truncated tags (a tooltip does not work on touch).
 **Led by:** Benedict Davon Martono
+
+## 2026-11-22 — How a saved discussion is stored (D3-4)
+**What:** `POST /api/discussions` stores the chat unchanged as an `Info` of kind `discussion`, with the question as its `title` and the person who answered as its `contributor`, so the draft goes to their inbox and only they can confirm it. The requester is not stored separately; the chat names them. A discussion gets no follow-up questions: the encoder does not ask for `kind == "discussion"` (Part B), and the route refuses with 500 if it ever returns a question, so no half-finished record is saved.
+**Why:** Keeps `models.py` and the `infos` table unchanged, and the raw record stays exactly what the two people wrote (D1-3).
+**Alternative rejected:** A `requester` column on `infos` (a `models.py` and schema change for a name the chat already shows); writing "Asked by ..." into `text` (changes the raw record).
+**Led by:** Darius Lung
