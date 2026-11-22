@@ -271,3 +271,21 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 #29, ask log:
 
     What about log_ask function we said to implement
+
+## End-to-end run on the real model, and three UI fixes (branch `fix/frontend-e2e-findings`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) ran the 03 flow against the team's model server, through the API and the browser, and wrote the three fixes and their tests directly (no subagent). The human (benedictdavon) asked for the run, chose which findings to fix and asked for the commit, push and PR.
+- **Fixes:** the number check accepts "62 C" without a degree sign; a reason that starts with "because" or "to" no longer reads "Because because" or "Because to"; the upload tab is hidden until the server reads files.
+- **Left out below:** the server address and API key.
+
+### Prompts
+
+    How about my UI part? Should we start connecting everything, and testing the flow with real docs, etcs?
+
+    use the real mode, set up the .env
+
+    yes
+
+    Yes fix the three UI items first
+
+    Commit, push, and open the PR, also add an entry in DECISIONS.md

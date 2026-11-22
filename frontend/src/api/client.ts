@@ -102,6 +102,12 @@ type CreateInfoBase = {
   tags?: string;
 };
 
+/**
+ * Whether the server reads uploaded files (Part B: `POST /api/infos` with `file`). Until it
+ * does, the Add screen offers pasted text only. Set to true when Part B's file upload is merged.
+ */
+export const FILE_UPLOAD_READY = false;
+
 /** Send exactly one of `text` or `file`. */
 export type CreateInfoInput =
   | (CreateInfoBase & { text: string; file?: undefined })

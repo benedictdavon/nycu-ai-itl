@@ -102,3 +102,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Records go to no outside AI service (04 §5). A 4B model is enough for answering from a few short records and drafting `M` from one record, it replies in under a second, and it leaves most of a shared GPU to its other users. A Q8_0 copy loses little quality against the full model and fits easily.
 **Alternative rejected:** Qwen3-8B or 14B (about 10–19 GB, more of the shared GPU for no failure the 4B model has shown that a bigger one is known to fix; the first choice if the suite starts failing); a third-party model API (sends record text outside, which 04 §5 rules out).
 **Led by:** Darius Lung
+
+## 2026-11-22 — Add a record: pasted text only until the server reads files
+**What:** The Add a record screen hides the "Upload a file" tab while `FILE_UPLOAD_READY` (`frontend/src/api/client.ts`) is false, and the "text missing" message no longer mentions a file. The upload code and its tests stay; setting the constant to true brings the tab back when Part B's file upload (architecture §6, B PR 1) is merged.
+**Why:** In the Nov 22 run against the real model, the tab offered something the backend cannot do yet: `POST /api/infos` takes only `text`, so every upload failed. Hiding it keeps the demo and the user tests on what works.
+**Alternative rejected:** Keeping the tab with an error after upload (users would try it and fail); deleting the upload code (it would have to be rewritten once Part B adds files).
+**Led by:** Benedict Davon Martono
