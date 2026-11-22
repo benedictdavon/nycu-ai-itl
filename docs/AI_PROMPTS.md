@@ -277,3 +277,13 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 - **Who:** Claude Opus 5.5 (Claude Code) wrote all code, tests and docs in this branch. The human (李原誌, runnywolf) set the task, chose to build it now, and reviews and tests it before the PR.
 - **Prompt** (translated from Chinese): after Claude listed what Part B still lacks against architecture §6 ("PR 1: `POST /api/infos` takes a file …") and proposed to build PR 1, the human replied "OK, please do it."
 - **Choices Claude made, for the human to check:** `pypdf` and `python-docx`; 10 MB limit; 415 for other types and 422 for no text (because the Add screen already shows both as "No text found"); originals under `data/uploads/<random id>/<name>`, saved only after every check passes. See the matching entry in `docs/DECISIONS.md`.
+
+## AI usage guidelines name Claude (branch `docs/ai-guidelines-claude`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) made the edit to `docs/AI_USAGE_GUIDELINES.md` §1. The human (dariuslung) decided the wording.
+
+### Prompts
+
+    I think we need to change AI_GUIDELINES since we don't really use Gemini, but rather Claude
+
+    Only change Gemini to Claude, but add Claude to the top two points
