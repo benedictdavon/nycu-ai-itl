@@ -116,3 +116,4 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** In the Nov 22 run against the real model, the tab offered something the backend cannot do yet: `POST /api/infos` takes only `text`, so every upload failed. Hiding it keeps the demo and the user tests on what works.
 **Alternative rejected:** Keeping the tab with an error after upload (users would try it and fail); deleting the upload code (it would have to be rewritten once Part B adds files).
 **Led by:** Benedict Davon Martono
+**Update (Nov 22):** Part B's file upload is merged (#32), so `FILE_UPLOAD_READY` is now true and the tab is back.
