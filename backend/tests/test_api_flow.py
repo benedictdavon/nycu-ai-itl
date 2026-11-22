@@ -9,7 +9,9 @@ from fastapi.testclient import TestClient
 from app import db, llm
 from app.encoder import service as encoder
 from app.encoder.service import MAX_TEXT_CHARS, ModelReply
+from app.ingest.service import MAX_FILE_BYTES
 from app.models import RecordDraft
+from tests.test_ingest import make_docx, make_pdf
 
 ALEX = "Alex Chen"
 BEA = "Bea Lin"
@@ -198,3 +200,44 @@ def test_too_long_text_is_413(client: TestClient) -> None:
     response = client.post("/api/infos", data={"contributor": ALEX, "title": TITLE, "text": text})
     assert response.status_code == 413
     assert client.get("/api/records").json() == []
+
+
+def _upload(client: TestClient, name: str, data: bytes, **fields: str):  # type: ignore[no-untyped-def]
+    form = {"contributor": ALEX, "title": TITLE, **fields}
+    return client.post("/api/infos", data=form, files={"file": (name, data)})
+
+
+def test_upload_a_file_then_download_it(client: TestClient) -> None:
+    for name, data, text in [
+        ("strain-x.pdf", make_pdf(TEXT), TEXT),
+        ("strain-x.docx", make_docx(TEXT, ["Wash", "2x"]), f"{TEXT}\nWash | 2x"),
+        ("strain-x.md", TEXT.encode(), TEXT),
+    ]:
+        state = _upload(client, name, data).json()
+        assert state["result"]["kind"] == "draft"
+        info = state["info"]
+        assert info["text"] == text and info["has_file"] is True
+        assert client.get(f"/api/records/{state['record_id']}").json()["info"]["has_file"] is True
+        original = client.get(f"/api/infos/{info['id']}/file")
+        assert original.status_code == 200 and original.content == data
+        assert name in original.headers["content-disposition"]
+
+
+def test_pasted_text_has_no_file(client: TestClient) -> None:
+    info = _paste(client)["info"]
+    assert info["has_file"] is False
+    assert client.get(f"/api/infos/{info['id']}/file").status_code == 404
+    assert client.get("/api/infos/999/file").status_code == 404
+
+
+def test_file_errors(client: TestClient) -> None:
+    scan = make_pdf("")  # a page with no text, like a scan
+    assert _upload(client, "photo.png", b"x").status_code == 415
+    assert _upload(client, "scan.pdf", scan).status_code == 422
+    assert _upload(client, "broken.docx", b"not a docx").status_code == 422
+    assert _upload(client, "big.txt", b"x" * (MAX_FILE_BYTES + 1)).status_code == 413
+    assert _upload(client, "long.txt", b"x" * (MAX_TEXT_CHARS + 1)).status_code == 413
+    assert _upload(client, "both.txt", TEXT.encode(), text=TEXT).status_code == 422
+    assert client.get("/api/records").json() == []
+    uploads = client.app.state.settings.db_path.parent / "uploads"  # type: ignore[attr-defined]
+    assert not uploads.exists()  # a refused file is not kept

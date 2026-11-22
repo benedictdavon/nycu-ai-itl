@@ -10,6 +10,7 @@ import { GapPanel } from "../../components/GapPanel";
 import { Page } from "../../components/Page";
 import { TwoColumn } from "../../components/TwoColumn";
 import { Button } from "../../components/ui/button";
+import { reasonParts } from "../../lib/utils";
 import { linkClass } from "./linkStyles";
 import { useCurrentMe } from "./useCurrentMe";
 import { firstName } from "./names";
@@ -128,7 +129,9 @@ export default function RecordScreen() {
                   <b>{change.what}</b>
                 </p>
                 <p className="type-body-small text-ink-secondary">
-                  {change.reason ? `Because ${change.reason}` : "No reason recorded."}
+                  {change.reason
+                    ? reasonParts(change.reason).lead + reasonParts(change.reason).text
+                    : "No reason recorded."}
                 </p>
               </li>
             ))}

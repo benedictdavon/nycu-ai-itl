@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { cn } from "./utils";
+import { cn, reasonParts } from "./utils";
+
+describe("reasonParts", () => {
+  it("puts Because in front of a plain reason", () => {
+    expect(reasonParts("cells clumped")).toEqual({ lead: "Because ", text: "cells clumped" });
+  });
+
+  it("does not double a because the reason already has", () => {
+    expect(reasonParts("because the cells clumped")).toEqual({
+      lead: "Because ",
+      text: "the cells clumped",
+    });
+  });
+
+  it("shows a purpose on its own, capitalised", () => {
+    expect(reasonParts("to reduce background")).toEqual({ lead: "", text: "To reduce background" });
+  });
+});
 
 describe("cn", () => {
   it("keeps the type role, the text colour and the background together", () => {
