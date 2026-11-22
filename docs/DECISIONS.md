@@ -81,6 +81,12 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Widths differed per screen (Who 560px, To review 1160px, Ask 1112px at 1920 wide), Ask jumped when Sources appeared, and seven tag pills took four rows in a 214px column. We rejected smaller pills (still four rows) and truncated tags (a tooltip does not work on touch).
 **Led by:** Benedict Davon Martono
 
+## 2026-11-22 — How a saved discussion is stored (D3-4)
+**What:** `POST /api/discussions` stores the chat unchanged as an `Info` of kind `discussion`, with the question as its `title` and the person who answered as its `contributor`, so the draft goes to their inbox and only they can confirm it. The requester is not stored separately; the chat names them. A discussion gets no follow-up questions: the encoder does not ask for `kind == "discussion"` (Part B), and the route refuses with 500 if it ever returns a question, so no half-finished record is saved.
+**Why:** Keeps `models.py` and the `infos` table unchanged, and the raw record stays exactly what the two people wrote (D1-3).
+**Alternative rejected:** A `requester` column on `infos` (a `models.py` and schema change for a name the chat already shows); writing "Asked by ..." into `text` (changes the raw record).
+**Led by:** Darius Lung
+
 ## 2026-11-22 — How the prompt suite runs and keeps its results
 **What:** `backend/prompt_suite/run.py` runs every case in `prompt_suite/cases/<part>.json` against the real model (it refuses `LLM_BACKEND=fake`) and saves a dated results file under `docs/cp2/prompt_suite/results/`, with the model name and commit but never the server address or key. A case is an input plus properties checked in code (kind, citations, contributors, phrases that must or must not appear, no digits, an uncertainty, at most 30 s), and optionally a `judge` sentence that a person marks by hand in the results file. Decoder cases name their hits by sample file (`R01`, `D01`), so they do not depend on search or the encoder. Part B adds an encoder runner and `cases/encoder.json`.
 **Why:** CP2 item 6 and architecture §5 ask for cases with required properties, run against the model, with results kept. Checks in code make a rerun cheap and comparable; some properties (cause vs fix, a hint that is not an answer) need a person.
