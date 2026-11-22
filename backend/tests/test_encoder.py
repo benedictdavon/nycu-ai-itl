@@ -90,3 +90,17 @@ def test_fake_backend_drafts_from_the_title() -> None:
     assert result.draft.procedure == UPLOAD.title
     assert result.draft.contributors == [ALEX]
     assert result.draft.project_tags == ["Project X"]
+
+
+def test_a_question_already_asked_is_dropped() -> None:
+    _fake().queue(_reply("  q1 "))  # same as "Q1?" after case, spaces and "?"
+    result = encode(UPLOAD, _answered(1))
+    assert result.kind == "draft" and result.draft is not None
+    assert result.draft.gaps == []  # it has its answer, so it is not a gap either
+
+
+def test_gaps_are_not_repeated() -> None:
+    _fake().queue(_reply("Which kit?", gaps=["Which kit?", "Culture volume.", "culture volume"]))
+    draft = encode(UPLOAD, _answered(2)).draft
+    assert draft is not None
+    assert draft.gaps == ["Which kit?", "Culture volume."]

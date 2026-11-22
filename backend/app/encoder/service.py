@@ -20,10 +20,18 @@ MAX_TEXT_CHARS = 12_000
 
 
 class ModelReply(BaseModel):
-    """What the model returns: always a draft, and a question only if it has one."""
+    """What the model returns: always a draft, and a question only if it has one.
 
-    question: str | None = None
+    The draft comes first, so the model writes it before it decides whether to ask.
+    """
+
     draft: RecordDraft
+    question: str | None = None
+
+
+def _same(text: str) -> str:
+    """Text compared for repeats: lower case, single spaces, no final "?" or "."."""
+    return " ".join(text.lower().split()).rstrip("?.")
 
 
 def _format_info(info: Info, follow_ups: list[FollowUp]) -> str:
@@ -39,15 +47,18 @@ def _format_info(info: Info, follow_ups: list[FollowUp]) -> str:
 
 def _with_rules(draft: RecordDraft, info: Info, unasked: str | None) -> RecordDraft:
     """The uploader first in contributors (D1-4), the upload's tags kept, an unasked question
-    in gaps."""
+    in gaps, and no gap twice."""
     names = [info.contributor, *(name.strip() for name in draft.contributors)]
     tags = [*info.project_tags, *(tag.strip() for tag in draft.project_tags)]
-    gaps = [*draft.gaps, unasked] if unasked else draft.gaps
+    gaps: dict[str, str] = {}  # by _same(), keeping the first wording and the order
+    for gap in [*draft.gaps, unasked or ""]:
+        if gap.strip():
+            gaps.setdefault(_same(gap), gap.strip())
     return draft.model_copy(
         update={
             "contributors": list(dict.fromkeys(name for name in names if name)),
             "project_tags": list(dict.fromkeys(tag for tag in tags if tag)),
-            "gaps": gaps,
+            "gaps": list(gaps.values()),
         }
     )
 
@@ -57,6 +68,7 @@ def encode(info: Info, follow_ups: list[FollowUp]) -> EncoderResult:
 
     The question limit is enforced here, not only in the prompt: once two questions were
     asked, or for a saved discussion, any question the model still has goes into `gaps`.
+    A question that was already asked is dropped: it has its answer.
     """
     may_ask = info.kind == "upload" and len(follow_ups) < MAX_QUESTIONS
     system = (PROMPTS / "system.md").read_text(encoding="utf-8")
@@ -72,6 +84,8 @@ def encode(info: Info, follow_ups: list[FollowUp]) -> EncoderResult:
     )
     reply = chat_json(system, _format_info(info, follow_ups), ModelReply, fake_reply=fake)
     question = (reply.question or "").strip() or None
+    if question and _same(question) in {_same(f.question) for f in follow_ups}:
+        question = None
     if question and may_ask:
         return EncoderResult(kind="question", question=question)
     return EncoderResult(kind="draft", draft=_with_rules(reply.draft, info, question))
