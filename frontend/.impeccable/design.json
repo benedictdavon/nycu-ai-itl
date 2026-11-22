@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T00:00:00Z",
+  "title": "Design System: LabKnow",
+  "extensions": {
+    "colorMeta": {
+      "coomassie-blue": { "role": "primary", "displayName": "Coomassie Blue", "canonical": "#2C3A9C", "tonalRamp": ["#121848", "#1E2870", "#2C3A9C", "#4A57B5", "#7480CB", "#A3ACDF", "#C9D1F2", "#E6E9F7"] },
+      "label-tape": { "role": "secondary", "displayName": "Label Tape", "canonical": "#F6D365", "tonalRamp": ["#3D2F00", "#6B5200", "#A07C0C", "#D4A82A", "#F6D365", "#F9E08E", "#FCEDBB", "#FEF8E6"] },
+      "alert-red": { "role": "tertiary", "displayName": "Alert Red", "canonical": "#B42318", "tonalRamp": ["#4A0D08", "#8F1C13", "#B42318", "#D2483B", "#E8796F", "#F2A9A2", "#F8D1CD", "#FDECEA"] },
+      "bench-ink": { "role": "neutral", "displayName": "Bench Ink", "canonical": "#18202B", "tonalRamp": ["#18202B", "#3A4452", "#556070", "#8592A0", "#B4BDC5", "#D3D9DD", "#EAEEEC", "#F7F8F8"] },
+      "bench-grey": { "role": "neutral", "displayName": "Bench Grey", "canonical": "#F1F3F2" },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#FFFFFF" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "One per screen: the screen's question or task." },
+      "headline": { "displayName": "Headline", "purpose": "Card and section headings." },
+      "title": { "displayName": "Title", "purpose": "Record names, error titles, a person's name." },
+      "body": { "displayName": "Body", "purpose": "All reading text, at most 66ch." },
+      "body-small": { "displayName": "Body small", "purpose": "Helper text and metadata." },
+      "label": { "displayName": "Label", "purpose": "Form labels, buttons, chips, nav. Sentence case." }
+    },
+    "shadows": [
+      { "name": "rest", "value": "0 1px 2px rgba(24,32,43,0.06), 0 4px 14px rgba(24,32,43,0.05)", "purpose": "Every card and panel at rest." },
+      { "name": "lift", "value": "0 2px 4px rgba(24,32,43,0.08), 0 10px 24px rgba(24,32,43,0.08)", "purpose": "Hover and focus on clickable cards and rows." },
+      { "name": "float", "value": "0 8px 24px rgba(24,32,43,0.18)", "purpose": "Toasts only." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Hover, lift and panel open." },
+      { "name": "duration-quick", "value": "160ms", "purpose": "Colour and shadow changes." },
+      { "name": "duration-panel", "value": "220ms", "purpose": "Opening an inline panel (Before you confirm, number check)." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "390px" },
+      { "name": "stack", "value": "912px" },
+      { "name": "container", "value": "1160px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action in a view, labelled with its result.",
+      "html": "<button class=\"ds-btn-primary\">Draft the record</button>",
+      "css": ".ds-btn-primary { min-height: 48px; padding: 0 22px; border: 0; border-radius: 10px; background: #2C3A9C; color: #FFFFFF; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 160ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-primary:hover { background: #1E2870; } .ds-btn-primary:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; } .ds-btn-primary:disabled { background: #D3D9DD; color: #3A4452; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Alternatives next to the primary action.",
+      "html": "<button class=\"ds-btn-secondary\">Save draft</button>",
+      "css": ".ds-btn-secondary { min-height: 48px; padding: 0 20px; border: 1px solid #8592A0; border-radius: 10px; background: #FFFFFF; color: #18202B; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 160ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-secondary:hover { background: #F7F8F8; } .ds-btn-secondary:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Label above, 46px field, blue focus ring.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Title</span><input class=\"ds-input\" value=\"Transformation of strain X with plasmid P\"></label>",
+      "css": ".ds-field { display: block; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; color: #18202B; } .ds-field-label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 6px; } .ds-input { width: 100%; box-sizing: border-box; min-height: 46px; padding: 10px 12px; border: 1px solid #8592A0; border-radius: 10px; background: #FFFFFF; color: #18202B; font: inherit; font-size: 17px; caret-color: #2C3A9C; } .ds-input:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Top nav with the To review count.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item is-active\" aria-current=\"page\" href=\"#\">Ask</a><a class=\"ds-nav-item\" href=\"#\">Add a record</a><a class=\"ds-nav-item\" href=\"#\">To review <span class=\"ds-badge\">2</span></a></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; gap: 4px; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; } .ds-nav-item { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 10px; color: #18202B; font-size: 15px; font-weight: 600; text-decoration: none; transition: background 160ms cubic-bezier(0.22,1,0.36,1); } .ds-nav-item:hover { background: #F7F8F8; } .ds-nav-item.is-active { background: #E6E9F7; color: #2C3A9C; } .ds-nav-item:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; } .ds-badge { min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #F6D365; color: #3D2F00; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }"
+    },
+    {
+      "name": "Tag Chip",
+      "kind": "chip",
+      "refersTo": "chip-tag",
+      "description": "Project tag with a remove button.",
+      "html": "<span class=\"ds-chip\">Project X<button class=\"ds-chip-remove\" aria-label=\"Remove tag Project X\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg></button></span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; box-sizing: border-box; padding: 2px 2px 2px 12px; border-radius: 999px; background: #EAEEEC; color: #18202B; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 15px; font-weight: 600; } .ds-chip-remove { width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: #3A4452; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; } .ds-chip-remove:hover { background: #D3D9DD; } .ds-chip-remove:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White page on the bench, softly lifted.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">Answer</h2><p class=\"ds-card-meta\">From 1 confirmed record by Alex Chen</p></section>",
+      "css": ".ds-card { background: #FFFFFF; border: 1px solid #E3E7EA; border-radius: 16px; padding: 28px 32px; box-shadow: 0 1px 2px rgba(24,32,43,0.06), 0 4px 14px rgba(24,32,43,0.05); font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; color: #18202B; } .ds-card-title { margin: 0; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 22px; font-weight: 600; line-height: 1.3; } .ds-card-meta { margin: 4px 0 0; font-size: 15px; color: #556070; }"
+    },
+    {
+      "name": "Source Marker",
+      "kind": "custom",
+      "refersTo": "source-marker",
+      "description": "Links a claim to the record it came from.",
+      "html": "<p class=\"ds-claim\"><b>50 ng of plasmid</b> <a class=\"ds-source\" href=\"#\" aria-label=\"Source 1: Transformation of strain X with plasmid P\">1</a></p>",
+      "css": ".ds-claim { margin: 0; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 17px; color: #18202B; } .ds-source { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #E6E9F7; color: #2C3A9C; font-size: 14px; font-weight: 700; text-decoration: none; vertical-align: 1px; transition: background 160ms cubic-bezier(0.22,1,0.36,1); } .ds-source:hover { background: #C9D1F2; } .ds-source:focus-visible { outline: 3px solid #2C3A9C; outline-offset: 2px; }"
+    },
+    {
+      "name": "Gap Panel",
+      "kind": "custom",
+      "refersTo": "gap-panel",
+      "description": "Everything missing or not recorded, the same way on every screen.",
+      "html": "<div class=\"ds-gap\"><p class=\"ds-gap-head\"><span class=\"ds-tape\">Not recorded</span><b>What the records don't say</b></p><ul class=\"ds-gap-list\"><li>Which antibiotic and plate were used for selection.</li></ul></div>",
+      "css": ".ds-gap { padding: 20px; border-radius: 16px; background: #FCF1CC; color: #4A3800; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; } .ds-gap-head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #3D2F00; } .ds-tape { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 4px; background: #F6D365; color: #3D2F00; font-size: 14px; font-weight: 700; } .ds-gap-list { margin: 8px 0 0; padding-left: 22px; }"
+    },
+    {
+      "name": "Number Flag",
+      "kind": "custom",
+      "refersTo": "number-flag",
+      "description": "A number with no source, or not in the original record.",
+      "html": "<p class=\"ds-flag-line\">Recover the cells in <mark class=\"ds-flag\">1 mL</mark> of SOC.</p>",
+      "css": ".ds-flag-line { margin: 0; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 17px; color: #18202B; } .ds-flag { background: #FDECEA; color: #8F1C13; padding: 1px 4px; border-radius: 4px; text-decoration: underline wavy #B42318; text-underline-offset: 4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Bench Notebook",
+    "overview": "LabKnow should feel like a well-kept bench notebook passed between labmates. It is plain, sturdy and legible, and every fact sits beside the name of the person who wrote it. It is a working tool, used at a desk between experiments, so it is calm and unhurried: a light bench-grey ground, white pages, and generous space around the things people must read carefully, such as volumes, amounts and temperatures.\n\nTwo colours carry meaning and nothing else does. Coomassie Blue marks what a labmate has confirmed: cited facts, sources, the primary action. Label Tape marks what is missing: gaps, things not recorded, drafts that need a look. A reader should be able to tell documented from undocumented at a glance, before reading a word. Red appears only when something is wrong or unverified.\n\nComponents are soft and friendly. Corners are round, cards lift slightly off the page with gentle shadows, and controls are large enough to hit without aiming. The friendliness comes from shape and spacing, not from decoration. There are no gradients, illustrations or emoji.",
+    "keyCharacteristics": [
+      "Two meaningful accents (Coomassie Blue, Label Tape) on a neutral bench-grey and paper base.",
+      "Every number in an answer is either linked to its source or flagged.",
+      "Highly legible type for parameters (Atkinson Hyperlegible Next), with a characterful grotesque (Bricolage Grotesque) for headings.",
+      "Rounded, softly lifted surfaces; touch targets of at least 44px.",
+      "Desktop first; every screen still works at 390px."
+    ],
+    "rules": [
+      { "name": "The Two Meanings Rule", "body": "Coomassie Blue only ever means \"confirmed, cited or the main action\". Label Tape only ever means \"missing or not recorded\". Neither is used for decoration, illustration or emphasis.", "section": "colors" },
+      { "name": "The Red Is Risk Rule", "body": "Alert Red appears only for errors and for numbers nobody has verified. A screen with no problem shows no red.", "section": "colors" },
+      { "name": "The Legible Numbers Rule", "body": "Every experimental parameter is set in Atkinson Hyperlegible Next, never in the heading face. Counters and timers (\"12 seconds so far\") use tabular numerals (font-variant-numeric: tabular-nums).", "section": "typography" },
+      { "name": "The Sentence Case Rule", "body": "No all-caps labels and no eyebrow text above headings. A heading says what the section is.", "section": "typography" },
+      { "name": "The Soft, Not Fuzzy Rule", "body": "Shadows are offset and soft, use bench-ink at low opacity, and never glow, tint or stack. Panels inside a card (gap panel, number check, \"Before you confirm\") are tinted and flat, with no shadow of their own.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do put a source marker after every claim that contains a number, and flag any number without one.",
+      "Do name the contributor next to every answer and on every source card.",
+      "Do use the gap panel for everything missing, in every screen, so it is learned once.",
+      "Do keep one primary button per view, labelled with what it does.",
+      "Do give every control a 44px minimum target and a visible 3px focus ring.",
+      "Do say how long the model may take (\"12 seconds so far. It usually takes under 30.\") instead of showing a fake percentage.",
+      "Do respect prefers-reduced-motion: hover lifts and colour changes only; no movement."
+    ],
+    "donts": [
+      "Don't use Coomassie Blue or Label Tape decoratively, including for illustrations, section accents or charts.",
+      "Don't add gradients, glass effects, glows, or a coloured bar down one side of a card.",
+      "Don't set parameters or numbers in Bricolage Grotesque.",
+      "Don't use all-caps labels, eyebrow text above headings, or emoji.",
+      "Don't pre-select a person, pre-tick an agreement, or make an irreversible action a single click.",
+      "Don't repeat blanket \"check the numbers\" warnings. Flag the specific number instead."
+    ]
+  }
+}

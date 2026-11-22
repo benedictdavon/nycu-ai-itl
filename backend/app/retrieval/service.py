@@ -1,4 +1,4 @@
-"""Search over confirmed M (D3-1).
+"""Search over confirmed M (D3-1), and the most relevant contributor (D3-3).
 
 Owner: Part A. SQLite FTS5 keyword search with the `porter` tokenizer (architecture.md §4), so
 "transform" also matches "transformation". The SQL is in app/db.py.
@@ -6,6 +6,8 @@ Owner: Part A. SQLite FTS5 keyword search with the `porter` tokenizer (architect
 
 import re
 import sqlite3
+from collections import defaultdict
+from collections.abc import Collection
 
 from app import db
 from app.models import Hit, Record
@@ -20,6 +22,9 @@ STOPWORDS = frozenset(
     this those to was we were what when where which who whom why will with would you your
     """.split()
 )
+
+# How many of the best hits suggest_contributor() looks at.
+SUGGEST_POOL = 20
 
 
 def keywords(query: str) -> list[str]:
@@ -47,3 +52,35 @@ def search(conn: sqlite3.Connection, query: str, k: int = 5) -> list[Hit]:
         Hit(record=record, score=score)
         for record, score in db.search_records(conn, _match(words), k)
     ]
+
+
+def suggest_contributor(
+    conn: sqlite3.Connection, query: str, exclude: str | Collection[str] = ()
+) -> str | None:
+    """The contributor with the most relevant confirmed records (D3-3).
+
+    "Relevant enough" (the D3-3 threshold): a record counts only if it contains more than half
+    of the query's keywords (stopwords removed, words stemmed), so 1 of 1, 2 of 2, 2 of 3, 3 of
+    4 or 5. Each counted record adds its search score to each of its contributors, and the
+    highest total wins. None if no record counts.
+
+    Names in `exclude` are never suggested: the requester, so nobody is pointed to themselves,
+    and anyone already asked about this question (D3-5). One name may be passed as a string.
+    """
+    words = keywords(query)
+    if not words:
+        return None
+    skip = {exclude} if isinstance(exclude, str) else set(exclude)
+    needed = len(words) // 2 + 1
+    matched: dict[int, int] = defaultdict(int)
+    for word in words:
+        for record_id in db.matching_record_ids(conn, _match([word])):
+            matched[record_id] += 1
+
+    totals: dict[str, float] = defaultdict(float)
+    for hit in search(conn, query, k=SUGGEST_POOL):
+        if matched[hit.record.id] >= needed:
+            for name in hit.record.contributors:
+                if name not in skip:
+                    totals[name] += hit.score
+    return max(totals, key=lambda name: totals[name]) if totals else None

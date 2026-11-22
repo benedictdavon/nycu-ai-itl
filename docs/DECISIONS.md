@@ -30,15 +30,56 @@
 **What:** Tommy is the code steward for Fri Nov 20 and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
 
+## 2026-11-20 — A draft can be confirmed with empty gaps
+**What:** A contributor can confirm a draft while some `gaps` are still empty. Empty gaps stay in `gaps`, and the record view shows them in the "Not recorded: Ask {contributor} if you need these" panel. Before confirming, the "Before you confirm" panel lists each empty gap ("Labmates will see them as not recorded"), so confirming with gaps is a deliberate choice.
+**Why:** Contributors often don't know every detail, and blocking confirmation would keep useful records unsearchable (PRODUCT.md principle 3: keep the contributor's extra work small). Showing the gaps keeps documented facts visibly apart from missing ones (principle 2). We rejected requiring every gap to be filled before confirming, because it pushes contributors to guess or to leave drafts unconfirmed.
+**Led by:** Benedict
+
 ## 2026-11-20 — Part A: keyword search with FTS5
 **What:** `search()` is SQLite FTS5 over the confirmed `M` only (procedure, based on, changes with their reasons, troubleshooting, tags, contributors), with the `porter unicode61` tokenizer and BM25 ranking. The question becomes an OR of its keywords, after a short English stopword list (`retrieval/service.py`). Each keyword is quoted, so user text never acts as FTS5 syntax. `index()` writes a record into the index when it is confirmed.
 **Why:** Architecture §4 chose FTS5 with `porter`. Keyword search with stemming is enough for six to a few dozen English records, needs no extra model, and is easy to explain. OR with stopwords removed finds a record that shares any meaningful word with the question; BM25 puts the record with more and rarer shared words first.
 **Alternative rejected:** AND of all keywords (one extra word in the question would hide the right record). Embeddings stay the fallback if paraphrased questions are missed (architecture §4).
 **Led by:** Tommy
 
+## 2026-11-20 — Part A: "relevant enough" contributor, and evidence for the evaluation
+**What:** `suggest_contributor()` (D3-3) counts a record only if it contains **more than half** of the question's keywords (1 of 1, 2 of 2, 2 of 3, 3 of 4). It adds up the search scores per contributor and returns the highest, or `None` if no record counts. An optional, repeatable `exclude` (the requester, and anyone already asked under D3-5) is never suggested, so nobody is pointed to themselves or back to someone who could not help (suggested by Darius in the #18 review; made repeatable for the frontend in the #20 review). Each record keeps the encoder's first draft (`records.first_draft`) next to the edited one, and an `asks` table is ready to log every question with its hits and answer, as evidence for 04 §3 (corrections, invented details).
+**Why:** Architecture §6 asks for a written threshold. A keyword share is readable and does not depend on the number of records, unlike a fixed BM25 score.
+**Alternative rejected:** A fixed BM25 score threshold (its scale changes with the number of records).
+**Led by:** Tommy
+
+## 2026-11-20 — Merge plan for Nov 21 (CP2 item 10) — proposal, to be agreed
+**What:** On merge day, the steward (李原誌) merges in dependency order, and each PR is brought up to date with the current `main` (merge `main` into the branch, which avoids force-pushing shared branches, or rebase) and passes `ruff` and `pytest` before it is merged:
+1. Any `models.py` change, reviewed by every owner (none planned).
+2. Shared fixes first, for example `llm.py` (#16) and the fake-LLM and test-settings fixes asked for on #15, so every later PR is tested the same way.
+3. Part A PRs (search, then suggestion and seed). Parts B and C use only `search()` and `index()`, whose signatures do not change.
+4. Part B PRs (files, follow-ups), then Part C PRs (decoder, discussions). Discussions go through B's encoder.
+5. Part D last, against the merged API.
+Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C adds discussion infos; Tommy reviews every SQL change), `main.py` (one router line per part), `tests/test_api_flow.py` (each part appends its own numbered steps) and `docs/DECISIONS.md` (append only). Conflicts there are resolved by the later PR's author.
+**Why:** Merging in dependency order keeps `main` runnable after every merge, so the user tests on Nov 21–22 run on a working build.
+**Led by:** Tommy
+
 ## 2026-11-21 — Code steward: 李原誌
 **What:** 李原誌 is the code steward for Sat Nov 21 (merge day) and merges the PRs approved that day.
 **Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-22 — Code steward: Benedict
+**What:** Benedict is the code steward for Sun Nov 22 and merges the PRs approved that day.
+**Why:** The CP2 rotation in `docs/cp2/architecture.md` §6 (Tommy Nov 20, 李原誌 Nov 21, Benedict Nov 22).
+
+## 2026-11-20 — Check the draft: the confirm step stays an inline panel
+**What:** "Confirm record" opens the inline "Before you confirm" panel (SCREENS.md §4), which now scrolls into view and takes focus; Escape and "Go back and check" return focus to "Confirm record". Publishing still takes two clicks.
+**Why:** The panel rendered below the fold with focus left on the button, so the step looked broken (audit P1). We rejected a modal dialog, because it would change the spec for a step that needs neither interruption nor trapped focus.
+**Led by:** Benedict Davon Martono
+
+## 2026-11-20 — Check the draft: open row edits block Save and Confirm
+**What:** While a draft row is open for editing, "Save draft", "Confirm record" and "Confirm and publish" refuse to run; the open row shows "Save or cancel this edit first." and takes focus. Leaving the page with unsaved edits asks first: `beforeunload` for reload and close, and react-router's `useBlocker` for in-app links, so `App` now uses a data router (`createBrowserRouter`).
+**Why:** Typed text in an open row was silently dropped on an irreversible publish (audit P1). We rejected lifting each row's edit state up and applying it on publish, because every row's validation (required procedure, empty change) would then have to run at publish time. We rejected `beforeunload` alone, because it misses the header links.
+**Led by:** Benedict Davon Martono
+
+## 2026-11-21 — Frontend layout: one reading width, quiet tags in Sources
+**What:** Single-column screens (Who, To review, Ask's main column) use a 760px reading width (`max-w-reading`), the main-column width of the two-column pattern, and the original record on Check the draft is sticky on desktop. In the Sources side card, project tags are a plain middot-separated text list instead of pills.
+**Why:** Widths differed per screen (Who 560px, To review 1160px, Ask 1112px at 1920 wide), Ask jumped when Sources appeared, and seven tag pills took four rows in a 214px column. We rejected smaller pills (still four rows) and truncated tags (a tooltip does not work on touch).
+**Led by:** Benedict Davon Martono
 
 ## 2026-11-22 — Part B: the encoder, follow-up questions and the text limit
 **What:** `encode()` sends the record and the answers so far to the model, which always returns a draft and, if it has one, a question (`encoder/service.py`). Code then decides: a question is asked only for an upload with fewer than two answered questions; otherwise it goes into `gaps` and the draft is kept (D2-3b). The uploader is always the first contributor, and the upload's tags are kept. Questions live in a `follow_ups` table; an answer is stored only after the model call succeeds, so a 503 leaves the question open to retry. Pasted text over 12,000 characters is refused with 413.
