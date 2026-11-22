@@ -97,5 +97,8 @@ def answer_follow_up(info_id: int, body: FollowUpAnswer, conn: ConnDep) -> Encod
     answered = [*follow_ups[:-1], FollowUp(question=follow_ups[-1].question, answer=answer)]
     # Encode first, store after: if the model fails (503), the question stays open to retry.
     result = encoder.encode(info, answered)
-    db.answer_follow_up(conn, info.id, answer)
+    try:
+        db.answer_follow_up(conn, info.id, len(follow_ups), answer)
+    except ValueError as exc:  # another request (double click, second tab) answered it first
+        raise HTTPException(status_code=409, detail="This question was already answered.") from exc
     return _save(conn, info, result)

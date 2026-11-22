@@ -207,16 +207,20 @@ def insert_follow_up(conn: sqlite3.Connection, info_id: int, question: str) -> N
     conn.commit()
 
 
-def answer_follow_up(conn: sqlite3.Connection, info_id: int, answer: str) -> None:
-    """Answer the Info's open question. Raises ValueError if none is open."""
+def answer_follow_up(conn: sqlite3.Connection, info_id: int, asked: int, answer: str) -> None:
+    """Answer question number `asked` (1-based) if it is still the open one.
+
+    Raises ValueError otherwise, for example when another request answered it first.
+    """
     cursor = conn.execute(
-        "UPDATE follow_ups SET answer = ? WHERE id ="
-        " (SELECT MAX(id) FROM follow_ups WHERE info_id = ?) AND answer IS NULL",
-        (answer, info_id),
+        "UPDATE follow_ups SET answer = ? WHERE id = (SELECT MAX(id) FROM follow_ups"
+        " WHERE info_id = ?) AND answer IS NULL"
+        " AND (SELECT COUNT(*) FROM follow_ups WHERE info_id = ?) = ?",
+        (answer, info_id, info_id, asked),
     )
     conn.commit()
     if cursor.rowcount == 0:
-        raise ValueError(f"info {info_id} has no open follow-up question")
+        raise ValueError(f"info {info_id}: question {asked} is not the open one")
 
 
 def list_records(

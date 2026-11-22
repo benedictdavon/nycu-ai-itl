@@ -3,9 +3,11 @@
 Fake LLM, real search. All names and records are made up.
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
-from app import llm
+from app import db, llm
+from app.encoder import service as encoder
 from app.encoder.service import MAX_TEXT_CHARS, ModelReply
 from app.models import RecordDraft
 
@@ -145,6 +147,29 @@ def test_model_failure_keeps_the_question_open(client: TestClient) -> None:
 
     retried = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "No."})
     assert retried.json()["result"]["kind"] == "draft"  # nothing queued: the fake drafts
+
+
+def test_a_second_answer_to_the_same_question_is_409(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A double click or a second tab: another request answers Q1 while the model runs."""
+    _queue("Did you change the recovery step?")
+    info_id = _paste(client)["info"]["id"]
+    real_encode = encoder.encode
+
+    def encode_while_another_request_finishes(info, follow_ups):  # type: ignore[no-untyped-def]
+        other = db.connect(client.app.state.settings.db_path)  # type: ignore[attr-defined]
+        db.answer_follow_up(other, info_id, 1, "First tab's answer.")
+        db.insert_follow_up(other, info_id, "How much plasmid?")
+        other.close()
+        return real_encode(info, follow_ups)
+
+    monkeypatch.setattr(encoder, "encode", encode_while_another_request_finishes)
+    late = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "Second tab's answer."})
+    assert late.status_code == 409
+    state = client.get(f"/api/infos/{info_id}").json()
+    assert [f["answer"] for f in state["follow_ups"]] == ["First tab's answer.", None]
+    assert state["result"]["question"] == "How much plasmid?"
 
 
 def test_follow_up_errors(client: TestClient) -> None:

@@ -19,6 +19,7 @@ Follow-up question (`question`):
 - Ask one question only if its answer would change the draft: an important change with no reason, a result that is not clear, or whether a key step followed the protocol.
 - Ask about one thing, in one short sentence the contributor can answer in a few words, for example "Did you change the recovery step?"
 - Never ask what the record or an earlier answer already says, and never ask the same thing twice.
+- An answer "I don't know" means the contributor skipped the question: the detail is unknown. Put it in `gaps`, and do not ask it again.
 - If nothing important is unclear, set `question` to null.
 - Always fill in `draft` as well, even when you ask a question.
 
