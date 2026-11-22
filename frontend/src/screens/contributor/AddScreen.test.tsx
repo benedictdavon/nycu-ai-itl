@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
+import { FILE_UPLOAD_READY } from "../../api/client";
 import { ToastProvider } from "../../components/Toast";
 import { MeProvider } from "../../lib/me";
 import AddScreen from "./AddScreen";
@@ -90,7 +91,16 @@ describe("Add a record", () => {
     expect(form.get("file")).toBeNull();
   });
 
-  it("puts the file input inside the drop-zone label, visually hidden with sr-only", async () => {
+  it.skipIf(FILE_UPLOAD_READY)("offers pasted text only while the server can't read files", () => {
+    localStorage.setItem("labknow.me", "Alex Chen");
+    stubFetch(() => errorResponse(404));
+    renderAt();
+
+    expect(screen.queryByRole("tab", { name: "Upload a file" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Record text")).toBeInTheDocument();
+  });
+
+  it.skipIf(!FILE_UPLOAD_READY)("puts the file input inside the drop-zone label, visually hidden with sr-only", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     stubFetch(() => errorResponse(404));
@@ -105,7 +115,7 @@ describe("Add a record", () => {
     expect(input).toHaveAttribute("accept", ".pdf,.docx,.txt,.md");
   });
 
-  it("sends the chosen file and names it", async () => {
+  it.skipIf(!FILE_UPLOAD_READY)("sends the chosen file and names it", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     const { calls } = stubFetch((call) =>
@@ -145,7 +155,7 @@ describe("Add a record", () => {
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 
-  it("names the file and offers to paste instead when the file has no text", async () => {
+  it.skipIf(!FILE_UPLOAD_READY)("names the file and offers to paste instead when the file has no text", async () => {
     const user = userEvent.setup();
     localStorage.setItem("labknow.me", "Alex Chen");
     stubFetch((call) =>
