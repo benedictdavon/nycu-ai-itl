@@ -41,7 +41,7 @@ Open <http://127.0.0.1:8000>, pick a name, and try the flow below. <http://127.0
 
 ## Try it
 
-1. **Add a record** as one person (for example Dana Huang): paste a short made-up record, answer up to two follow-up questions, then check the draft against the original, fix anything wrong, and confirm it.
+1. **Add a record** as one person (for example Dana Huang): paste a short made-up record, answer any follow-up questions (the real model asks up to two), then check the draft against the original, fix anything wrong, and confirm it.
 2. **Ask** as another person (for example Chris Wu), using words from the record. The answer links to its sources and names their contributors. Turn on **Hints first** for pointers instead of the full answer.
 3. Ask something no record covers. LabKnow says the records are not enough, suggests or lets you choose a person to ask, and lets you **save the discussion** once it is solved.
 4. Switch to the person who answered. The saved discussion waits in **To review**; confirm it, and the next person who asks finds it.
