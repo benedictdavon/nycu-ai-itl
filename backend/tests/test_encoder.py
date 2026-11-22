@@ -72,6 +72,7 @@ def test_a_discussion_never_asks() -> None:
     result = encode(DISCUSSION, [])
     assert result.kind == "draft" and result.draft is not None
     assert result.draft.gaps == ["Which kit?"]
+    assert result.draft.contributors == [ALEX]  # not "Bea Lin", whom the model named
     assert "No more questions" in fake.calls[0][0]
 
 
