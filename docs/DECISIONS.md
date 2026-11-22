@@ -123,3 +123,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Alternative rejected:** Keeping the tab with an error after upload (users would try it and fail); deleting the upload code (it would have to be rewritten once Part B adds files).
 **Led by:** Benedict Davon Martono
 **Update (Nov 22):** Part B's file upload is merged (#32), so `FILE_UPLOAD_READY` is now true and the tab is back.
+
+## 2026-11-22 — Part B: encoder cases in the prompt suite, and a discussion's contributor
+**What:** Six encoder cases in `backend/prompt_suite/cases/encoder.json`, run by `run_encoder` in `prompt_suite/run.py`. The runner answers each question with the case's next answer, then with "I don't know" (the Follow-up screen's Skip). `check_draft` checks the case's properties in code; `judge` lines are checked by hand. The cases are a complete record, a record full of values, a change with no written reason, an unclear record, every question skipped, and a discussion. A discussion's only contributor is now the Info's contributor (the person who answered), set in code.
+**Why:** Architecture §6 asks for at least 5 encoder cases, typical and edge, run on the real model. In the first run the model listed the requester of a discussion as a contributor. A prompt rule did not stop it and made another case fail, so the rule is in code (`docs/cp2/prompt_suite/fail_then_fix_encoder.md`, cycle 2). The latest run passes 4 of 6 automatic checks; the two failures are needless questions on complete records. Of the three properties judged by hand, one fails: the draft for record 04 leaves out the efficiency result. All three are kept as known limits.
+**Alternative rejected:** Changing the expected results so every case passes (the suite should show what the model still gets wrong); further prompt rules against needless questions (each one tried made the model guess reasons again).
+**Led by:** 李原誌

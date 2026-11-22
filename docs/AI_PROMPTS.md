@@ -296,6 +296,16 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 
     Commit, push, and open the PR, also add an entry in DECISIONS.md
 
+## Part B: encoder cases and the prompt card (branch `feat/part-b-prompt-suite`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) wrote the cases, `run_encoder` and `check_draft`, the tests, the code guard for a discussion's contributor, and the docs. Claude also ran the suite on the real model and tried the prompt changes. The human (李原誌, runnywolf) set the task and reviews and tests it before the PR.
+- **Prompt** (translated from Chinese): "While waiting for PR 24 to merge, do the encoder test cases and the prompt card first."
+- **Choices Claude made, for the human to check:**
+  - The six cases and their expected properties.
+  - Backing out the two prompt changes that made `enc-no-reason` fail.
+  - Fixing a discussion's contributors in code instead of in the prompt.
+  - Keeping the two failing cases failing, without changing what they expect.
+
 ## CLAUDE.md brought up to date (branch `docs/claude-md-current`, 2026-11-22)
 
 - **Who:** Claude Opus 5.5 (Claude Code) made the edit. The human (benedictdavon) asked for it and chose a separate branch from `main` instead of building on #34.
