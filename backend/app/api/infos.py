@@ -1,16 +1,18 @@
-"""Infos: a contributor pastes a raw record; the encoder asks follow-up questions or drafts M.
-
-Pasted text only for now; file uploads come in a later Part B PR.
-"""
+"""Infos: a contributor pastes or uploads a raw record; the encoder asks or drafts M."""
 
 import sqlite3
+import uuid
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from app import db
-from app.api.deps import ConnDep
+from app.api.deps import ConnDep, SettingsDep
+from app.config import Settings
 from app.encoder import service as encoder
+from app.ingest import service as ingest
 from app.models import EncoderResult, EncodeState, FollowUp, FollowUpAnswer, Info, RecordDraft
 
 router = APIRouter()
@@ -38,6 +40,40 @@ def _state(conn: sqlite3.Connection, info: Info) -> EncodeState:
     raise HTTPException(status_code=409, detail="This upload was never encoded. Upload it again.")
 
 
+def _uploads(settings: Settings) -> Path:
+    """Original files are kept in uploads/, next to the database (so under data/)."""
+    return settings.db_path.parent / "uploads"
+
+
+def _read_file(name: str, file: UploadFile) -> tuple[str, bytes]:
+    """The file's text and bytes, or a clear error the Add screen can show."""
+    data = file.file.read(ingest.MAX_FILE_BYTES + 1)  # 多讀 1 byte，才知道有沒有超過
+    if len(data) > ingest.MAX_FILE_BYTES:
+        limit = ingest.MAX_FILE_BYTES // (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"{name} is over {limit} MB.")
+    try:
+        text = ingest.extract_text(name, data)
+    except ingest.UnsupportedFileType as exc:
+        types = ", ".join(ingest.TYPES)
+        detail = f"{name} can't be read. Upload one of: {types}."
+        raise HTTPException(status_code=415, detail=detail) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"{name} could not be read.") from exc
+    if not text:
+        detail = f"No text found in {name}. Scanned pages and photos can't be read yet."
+        raise HTTPException(status_code=422, detail=detail)
+    return text, data
+
+
+def _save_file(settings: Settings, name: str, data: bytes) -> str:
+    """Keep the original under its own name, in a new folder; returns the path in uploads/."""
+    relative = f"{uuid.uuid4().hex}/{name}"
+    path = _uploads(settings) / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return relative
+
+
 def _save(conn: sqlite3.Connection, info: Info, result: EncoderResult) -> EncodeState:
     """Store the encoder's next step: a new open question, or the draft M."""
     if result.kind == "question" and result.question:
@@ -50,21 +86,34 @@ def _save(conn: sqlite3.Connection, info: Info, result: EncoderResult) -> Encode
 @router.post("/infos", response_model=EncodeState)
 def create_info(
     conn: ConnDep,
+    settings: SettingsDep,
     contributor: Annotated[str, Form()],
     title: Annotated[str, Form()],
-    text: Annotated[str, Form()],
+    text: Annotated[str | None, Form()] = None,
+    file: Annotated[UploadFile | None, File()] = None,
     link: Annotated[str | None, Form()] = None,
     tags: Annotated[str | None, Form()] = None,
 ) -> EncodeState:
-    contributor, title, text = contributor.strip(), title.strip(), text.strip()
-    if not (contributor and title and text):
-        raise HTTPException(status_code=422, detail="contributor, title and text are required.")
+    """Send the record as `text` or as `file` (.txt, .md, .pdf, .docx), not both."""
+    contributor, title, text = contributor.strip(), title.strip(), (text or "").strip()
+    if not (contributor and title and (text or file is not None)):
+        detail = "contributor, title, and text or a file are required."
+        raise HTTPException(status_code=422, detail=detail)
+    if text and file is not None:
+        raise HTTPException(status_code=422, detail="Send the text or a file, not both.")
+    name, data = "", b""
+    if file is not None:
+        name = Path(file.filename or "").name  # 只留檔名，不信任使用者給的路徑
+        text, data = _read_file(name, file)
     if len(text) > encoder.MAX_TEXT_CHARS:
         raise HTTPException(
             status_code=413,
             detail=f"The record is {len(text):,} characters; the limit is"
             f" {encoder.MAX_TEXT_CHARS:,}. Split it into smaller records.",
         )
+    file_path = None
+    if file is not None:  # 檢查都通過才存檔，被拒絕的檔案不會留在 data/
+        file_path = _save_file(settings, name, data)
     info = db.insert_info(
         conn,
         kind="upload",
@@ -73,6 +122,7 @@ def create_info(
         text=text,
         link=(link or "").strip() or None,
         project_tags=[tag.strip() for tag in (tags or "").split(",") if tag.strip()],
+        file_path=file_path,
     )
     return _save(conn, info, encoder.encode(info, follow_ups=[]))
 
@@ -80,6 +130,17 @@ def create_info(
 @router.get("/infos/{info_id}", response_model=EncodeState)
 def get_info(info_id: int, conn: ConnDep) -> EncodeState:
     return _state(conn, _require_info(conn, info_id))
+
+
+@router.get("/infos/{info_id}/file")
+def get_info_file(info_id: int, conn: ConnDep, settings: SettingsDep) -> FileResponse:
+    """The original file, as it was uploaded (D1-3)."""
+    _require_info(conn, info_id)
+    relative = db.get_info_file_path(conn, info_id)
+    path = _uploads(settings) / relative if relative else None
+    if path is None or not path.is_file():
+        raise HTTPException(status_code=404, detail="This record has no original file.")
+    return FileResponse(path, filename=path.name)
 
 
 @router.post("/infos/{info_id}/follow-ups", response_model=EncodeState)

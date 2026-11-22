@@ -272,6 +272,12 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 
     What about log_ask function we said to implement
 
+## Part B: reading uploaded files (branch `feat/part-b-files`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) wrote all code, tests and docs in this branch. The human (李原誌, runnywolf) set the task, chose to build it now, and reviews and tests it before the PR.
+- **Prompt** (translated from Chinese): after Claude listed what Part B still lacks against architecture §6 ("PR 1: `POST /api/infos` takes a file …") and proposed to build PR 1, the human replied "OK, please do it."
+- **Choices Claude made, for the human to check:** `pypdf` and `python-docx`; 10 MB limit; 415 for other types and 422 for no text (because the Add screen already shows both as "No text found"); originals under `data/uploads/<random id>/<name>`, saved only after every check passes. See the matching entry in `docs/DECISIONS.md`.
+
 ## End-to-end run on the real model, and three UI fixes (branch `fix/frontend-e2e-findings`, 2026-11-22)
 
 - **Who:** Claude Opus 5.5 (Claude Code) ran the 03 flow against the team's model server, through the API and the browser, and wrote the three fixes and their tests directly (no subagent). The human (benedictdavon) asked for the run, chose which findings to fix and asked for the commit, push and PR.
