@@ -120,12 +120,13 @@ def insert_info(
     text: str,
     link: str | None = None,
     project_tags: list[str] | None = None,
+    file_path: str | None = None,
 ) -> Info:
-    """Store a raw record (D1-1)."""
+    """Store a raw record (D1-1). file_path is where the uploaded original was saved."""
     cursor = conn.execute(
-        "INSERT INTO infos (kind, contributor, title, text, link, project_tags)"
-        " VALUES (?, ?, ?, ?, ?, ?)",
-        (kind, contributor, title, text, link, json.dumps(project_tags or [])),
+        "INSERT INTO infos (kind, contributor, title, text, link, project_tags, file_path)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (kind, contributor, title, text, link, json.dumps(project_tags or []), file_path),
     )
     conn.commit()
     return _require(get_info(conn, cursor.lastrowid or 0))
@@ -134,6 +135,12 @@ def insert_info(
 def get_info(conn: sqlite3.Connection, info_id: int) -> Info | None:
     row = conn.execute("SELECT * FROM infos WHERE id = ?", (info_id,)).fetchone()
     return None if row is None else _info_from_row(row)
+
+
+def get_info_file_path(conn: sqlite3.Connection, info_id: int) -> str | None:
+    """Where an Info's original file was saved, or None (no such Info, or pasted text)."""
+    row = conn.execute("SELECT file_path FROM infos WHERE id = ?", (info_id,)).fetchone()
+    return None if row is None else row["file_path"]
 
 
 def insert_record(conn: sqlite3.Connection, info_id: int, draft: RecordDraft) -> Record:
