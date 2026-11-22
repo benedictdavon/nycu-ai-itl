@@ -295,3 +295,14 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
     Yes fix the three UI items first
 
     Commit, push, and open the PR, also add an entry in DECISIONS.md
+
+## CLAUDE.md brought up to date (branch `docs/claude-md-current`, 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) made the edit. The human (benedictdavon) asked for it and chose a separate branch from `main` instead of building on #34.
+- **Changes:** the model server is described as running (Qwen3-4B on `llama-server`), not planned; the Commands section adds the frontend commands and points to the README for running the whole app.
+
+### Prompts
+
+    Do we push the CLAUDE.md?
+
+    Yes, should we go ontop of the darius PR for this?
