@@ -31,7 +31,7 @@ The request and response models already exist in `models.py`. The owner of each 
 | `POST /api/infos/{id}/follow-ups` | `FollowUpAnswer` | `EncodeState`: the next question, or the draft after at most two answers. 404; 409 no open question; 422 blank; 503 (the question stays open, retry) | B |
 | `GET /api/infos/{id}/file` | — | the original file | B |
 | `GET /api/suggest-contributor` | query `q`*, `exclude`? (repeatable, for example `?exclude=A&exclude=B`: the requester and anyone already asked; never suggested) | `SuggestResponse`; `contributor` is `null` when no record is relevant enough (rule in `retrieval/service.py`, `suggest_contributor`). Errors: 422 missing or blank `q` | A |
-| `POST /api/discussions` | `DiscussionCreate` | `EncodeState` (always a draft) | C |
+| `POST /api/discussions` | `DiscussionCreate` (JSON) | `EncodeState`, always a draft with `record_id`, in the contributor's inbox. The `Info` has `kind: "discussion"`, the question as `title` and the chat as `text`. Errors: 422 missing or blank field (`detail[].loc` names each field); 500 the encoder asked a question; 503 | C |
 | `GET /api/members` | — | `string[]` from `samples/members.json` | D |
 
 ## Models
