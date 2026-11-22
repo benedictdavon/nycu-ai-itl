@@ -1,6 +1,6 @@
 # Prompt suite: fail-then-fix cycles (decoder)
 
-CP2 item 6 asks for at least one cycle where a case failed and a prompt or code change fixed it. These are the decoder's two, both found while building PR #15, against Qwen3-4B Q8_0 on `llama-server` with the sample records as hits. They ran with a scratch script that called `decoder.answer()` directly, before the runner existed; the outputs below are copied from its logs. The cases `clump`, `clump-hint` and `plasmid-amount` in [`backend/prompt_suite/cases/decoder.json`](../../../backend/prompt_suite/cases/decoder.json) now check the same failures, and the suite's results are in [`results/`](results/).
+CP2 item 6 asks for at least one cycle where a case failed and a prompt or code change fixed it. These are the decoder's first two, both found while building PR #15, against Qwen3-4B Q8_0 on `llama-server` with the sample records as hits. They ran with a scratch script that called `decoder.answer()` directly, before the runner existed; the outputs below are copied from its logs. Cycle 3, found later by an independent review of the suite's first run, is not fixed: it is kept as a known limit. The cases `clump`, `clump-hint` and `plasmid-amount` in [`backend/prompt_suite/cases/decoder.json`](../../../backend/prompt_suite/cases/decoder.json) now check the same failures, and the suite's results are in [`results/`](results/).
 
 ## 1. Cause and fix swapped (`clump`, `clump-hint`)
 
@@ -47,3 +47,27 @@ It was removed. D3-1a asks only for "hints instead of a detailed answer", and th
 > Alex Chen transformed strain X with plasmid P. The first attempt gave few colonies, which was fixed by changing the wash volume. The plasmid amount used was 50 ng.
 
 Directions the records do give are kept, for example "The lysis step was extended from 2 to 5 minutes" (record 03 gives both values).
+
+## 3. A hint that gives the fix (`competent-hint`): not fixed, a known limit
+
+**Case:** "My competent cells give low efficiency. What helped before?" in hint mode, with records 01, 04 (competent cells, Alex Chen) and 06 as hits. Record 04's change is "One extra cold wash step added".
+
+**How it was found.** In the suite's first run ([results/2026-11-22-1416.md](results/2026-11-22-1416.md)) the automatic checks passed (no digits) and Darius first marked the judged property pass. A second review by a fresh Claude Opus agent, given the answers, records and prompts but no one's verdict, failed it, and Darius agreed:
+
+> Look at the wash steps. Alex Chen's record shows that adding an extra cold wash improved efficiency. Check the procedure for any changes to the wash step.
+
+"adding an extra cold wash" is the fix, which `hint.md` forbids ("`text` must not contain the fix"; "Do not say what was changed"). The prompt's only example is a changed value (80 V instead of 120 V), not an added step.
+
+**Code change kept:** the case now also has `must_not_include: ["extra", "cold wash", "added", "adding"]`, so the failure is caught in code, not only by a reader.
+
+**Prompt changes tried, all backed out.** Each was run on all seven cases; the other five did not change.
+
+| Change to `hint.md` | `clump-hint` | `competent-hint` |
+|---|---|---|
+| Widen the rule: "Do not say what was changed, added or removed, or which way a result went … Name only the step or variable." | Gave the fix: "Try doubling the wash volume as he did." | Still gave the fix, and also cited record 01: "changing the wash volume or adding an extra cold wash affected efficiency. Check the wash protocol in id 1 or id 4." |
+| A second worked example, for an added step (a made-up DNase step) | **Swapped cause and fix again** (cycle 1): "The doubled wash volume caused cells to clump." | "an extra cold wash step improved efficiency" |
+| "Name the step as the base protocol has it ("the lysis step", "the running voltage"), never what the contributor did to it." | Gave the fix: "doubling the wash volume fixed cell clumping" | As in the first row |
+
+Listing what not to say seems to prime Qwen3-4B to say it, and every stricter hint rule so far has made another hint case worse (as in cycle 1). So `hint.md` stays as it was, and the suite records `competent-hint` as failing.
+
+**What would fix it, not done for CP2:** a guard in code that compares a hint with the cited records' "Changed from the base protocol" lines and replaces a hint that repeats one with a fixed hint naming the record; or a larger model. Until then, hint mode can give away a fix that is an added step, so in the demo a hint should be read as "where to look", not as a guaranteed hint.

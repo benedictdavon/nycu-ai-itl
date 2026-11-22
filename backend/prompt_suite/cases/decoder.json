@@ -64,6 +64,7 @@
       "kind": "answered",
       "cites": ["R04"],
       "contributors": ["Alex Chen"],
+      "must_not_include": ["extra", "cold wash", "added", "adding"],
       "no_digits": true
     },
     "judge": "A hint: points to the washing of the cells without giving the fix."
