@@ -24,7 +24,8 @@ from typing import Any
 
 from app.config import REPO_ROOT, get_settings
 from app.decoder import service as decoder
-from app.models import Answer, Hit, Record
+from app.encoder import service as encoder
+from app.models import Answer, FollowUp, Hit, Info, Record, RecordDraft
 
 CASES = Path(__file__).parent / "cases"
 RESULTS = REPO_ROOT / "docs" / "cp2" / "prompt_suite" / "results"
@@ -43,6 +44,21 @@ DECODER_EXPECT = {
     "no_digits",
     "needs_uncertainty",
 }
+
+ENCODER_EXPECT = {
+    "asks",
+    "contributors",
+    "based_on_includes",
+    "changes_include",
+    "reason_includes",
+    "no_reason_for",
+    "has_troubleshooting",
+    "has_gaps",
+    "must_not_include",
+    "no_invented_numbers",
+}
+SKIPPED = "I don't know"  # what the Follow-up screen sends for "Skip"
+NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 
 @dataclass
@@ -115,8 +131,97 @@ def run_decoder(case: dict[str, Any]) -> Result:
     return Result(case=case, seconds=seconds, failed=failed, output="\n".join(lines))
 
 
-# Part B adds "encoder": run_encoder here, for the cases in cases/encoder.json.
-RUNNERS: dict[str, Callable[[dict[str, Any]], Result]] = {"decoder": run_decoder}
+def load_info(case: dict[str, Any]) -> Info:
+    """The case's Info: a sample's .txt with its .json `info`, or the case's own `info`."""
+    if "sample" in case:
+        folder, offset = SAMPLE_DIRS[case["sample"][0]]
+        [path] = (REPO_ROOT / "samples" / folder).glob(f"{case['sample'][1:]}-*.json")
+        fields = json.loads(path.read_text(encoding="utf-8"))["info"]
+        fields["text"] = path.with_suffix(".txt").read_text(encoding="utf-8").strip()
+    else:
+        fields = dict(case["info"])
+    return Info(id=1, **fields)
+
+
+def check_draft(
+    expect: dict[str, Any], draft: RecordDraft, asked: int, source: str, seconds: float
+) -> list[str]:
+    """The checks an encoder case fails; empty if it passes. `source` is the record and answers."""
+    failed = []
+    whole = draft.model_dump_json().lower()
+    reasons = " ".join(change.reason or "" for change in draft.changes).lower()
+    if "asks" in expect and (asked > 0) != expect["asks"]:
+        failed.append(f"asked {asked} question(s), expected {'some' if expect['asks'] else 'none'}")
+    if "contributors" in expect and draft.contributors != expect["contributors"]:
+        failed.append(f"contributors {draft.contributors}, expected {expect['contributors']}")
+    if (
+        "based_on_includes" in expect
+        and expect["based_on_includes"].lower() not in (draft.based_on or "").lower()
+    ):
+        failed.append(f"based_on is {draft.based_on!r}, expected {expect['based_on_includes']!r}")
+    for phrase in expect.get("changes_include", []):
+        if not any(phrase.lower() in change.what.lower() for change in draft.changes):
+            failed.append(f'no change says "{phrase}"')
+    for phrase in expect.get("reason_includes", []):
+        if phrase.lower() not in reasons:
+            failed.append(f'no reason says "{phrase}"')
+    for phrase in expect.get("no_reason_for", []):
+        for change in draft.changes:
+            if phrase.lower() in change.what.lower() and change.reason:
+                failed.append(f'"{change.what}" has a reason the record does not give')
+    if (
+        "has_troubleshooting" in expect
+        and bool(draft.troubleshooting) != expect["has_troubleshooting"]
+    ):
+        failed.append(f"troubleshooting is {draft.troubleshooting!r}")
+    if "has_gaps" in expect and bool(draft.gaps) != expect["has_gaps"]:
+        failed.append(f"gaps are {draft.gaps}")
+    for phrase in expect.get("must_not_include", []):
+        if phrase.lower() in whole:
+            failed.append(f'draft has "{phrase}"')
+    if expect.get("no_invented_numbers"):
+        invented = sorted(set(NUMBER.findall(whole)) - set(NUMBER.findall(source)))
+        if invented:
+            failed.append(f"numbers not in the record or answers: {invented}")
+    if seconds > MAX_SECONDS:
+        failed.append(f"slowest call took {seconds:.1f} s (limit {MAX_SECONDS} s)")
+    return failed
+
+
+def run_encoder(case: dict[str, Any]) -> Result:
+    """Encode the record; answer each question with the case's next answer, or skip it."""
+    info = load_info(case)
+    answers = case.get("answers", [])
+    follow_ups: list[FollowUp] = []
+    slowest = 0.0
+    lines = [f"- Record ({info.kind}, by {info.contributor}): {info.title}"]
+    while True:  # encode() stops asking after two answers, so this ends
+        start = time.monotonic()
+        result = encoder.encode(info, follow_ups)
+        slowest = max(slowest, time.monotonic() - start)
+        if result.kind == "draft" and result.draft is not None:
+            break
+        answer = answers[len(follow_ups)] if len(follow_ups) < len(answers) else SKIPPED
+        lines.append(f"- Question {len(follow_ups) + 1}: {result.question} Answer: {answer}")
+        follow_ups.append(FollowUp(question=result.question or "", answer=answer))
+    draft = result.draft
+    lines += [
+        f"- Questions asked: {len(follow_ups)}",
+        "- Draft:",
+        "",
+        "  ```json",
+        *(f"  {line}" for line in draft.model_dump_json(indent=2).splitlines()),
+        "  ```",
+    ]
+    source = " ".join([info.text, *(f.answer or "" for f in follow_ups)])
+    failed = check_draft(case["expect"], draft, len(follow_ups), source, slowest)
+    return Result(case=case, seconds=slowest, failed=failed, output="\n".join(lines))
+
+
+RUNNERS: dict[str, Callable[[dict[str, Any]], Result]] = {
+    "decoder": run_decoder,
+    "encoder": run_encoder,
+}
 
 
 def load_cases(part: str | None = None) -> list[dict[str, Any]]:

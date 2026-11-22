@@ -47,8 +47,11 @@ def _format_info(info: Info, follow_ups: list[FollowUp]) -> str:
 
 def _with_rules(draft: RecordDraft, info: Info, unasked: str | None) -> RecordDraft:
     """The uploader first in contributors (D1-4), the upload's tags kept, an unasked question
-    in gaps, and no gap twice."""
-    names = [info.contributor, *(name.strip() for name in draft.contributors)]
+    in gaps, and no gap twice. A discussion's only contributor is the person who answered: the
+    model also listed the requester, who only asked (prompt suite, enc-discussion)."""
+    names = [info.contributor]
+    if info.kind == "upload":
+        names += [name.strip() for name in draft.contributors]
     tags = [*info.project_tags, *(tag.strip() for tag in draft.project_tags)]
     gaps: dict[str, str] = {}  # by _same(), keeping the first wording and the order
     for gap in [*draft.gaps, unasked or ""]:

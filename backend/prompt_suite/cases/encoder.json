@@ -1,1 +1,88 @@
-[]
+[
+  {
+    "id": "enc-complete",
+    "about": "Typical record with nothing to ask: sample record 01",
+    "sample": "R01",
+    "expect": {
+      "asks": false,
+      "contributors": ["Alex Chen"],
+      "based_on_includes": "Transformation v2",
+      "changes_include": ["wash volume"],
+      "reason_includes": ["clump"],
+      "has_troubleshooting": true,
+      "no_invented_numbers": true
+    },
+    "judge": "The wash change is the fix for the clumping, not its cause; the recovery step is not listed as changed."
+  },
+  {
+    "id": "enc-numbers",
+    "about": "A record full of values, both old and new given: sample record 02",
+    "sample": "R02",
+    "expect": {
+      "asks": false,
+      "changes_include": ["62"],
+      "has_troubleshooting": true,
+      "no_invented_numbers": true
+    }
+  },
+  {
+    "id": "enc-no-reason",
+    "about": "An added step whose reason is not written: before the prompt forbade it, the model guessed reasons",
+    "sample": "R04",
+    "expect": {
+      "changes_include": ["cold wash"],
+      "no_reason_for": ["cold wash"],
+      "must_not_include": ["to improve", "to increase"],
+      "no_invented_numbers": true
+    },
+    "judge": "The efficiency before and after appears as a result, not as the reason for the extra wash."
+  },
+  {
+    "id": "enc-unclear",
+    "about": "An unclear record: the model must ask, and the answer must reach the draft",
+    "info": {
+      "kind": "upload",
+      "contributor": "Bea Lin",
+      "title": "Transformation retry",
+      "text": "Changed the wash this time and it worked better. Colonies looked normal."
+    },
+    "answers": ["I doubled the wash volume because the cells clumped; nothing else changed."],
+    "expect": {
+      "asks": true,
+      "contributors": ["Bea Lin"],
+      "changes_include": ["wash"],
+      "reason_includes": ["clump"],
+      "no_invented_numbers": true
+    },
+    "judge": "The question is short and about one thing, and the second question (if any) is not the first one again."
+  },
+  {
+    "id": "enc-skipped",
+    "about": "Every question skipped ('I don't know'): at most two questions, the unknowns go to gaps",
+    "info": {
+      "kind": "upload",
+      "contributor": "Bea Lin",
+      "title": "Transformation retry",
+      "text": "Changed the wash this time and it worked better. Colonies looked normal."
+    },
+    "answers": [],
+    "expect": {
+      "contributors": ["Bea Lin"],
+      "has_gaps": true,
+      "must_not_include": ["double", "clump"],
+      "no_invented_numbers": true
+    }
+  },
+  {
+    "id": "enc-discussion",
+    "about": "A saved discussion: never a question, and the requester (Chris Wu) is not a contributor",
+    "sample": "D01",
+    "expect": {
+      "asks": false,
+      "contributors": ["Alex Chen"],
+      "changes_include": ["wash volume"],
+      "has_troubleshooting": true,
+      "no_invented_numbers": true
+    }
+  }
+]
