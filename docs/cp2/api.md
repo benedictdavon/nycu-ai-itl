@@ -26,10 +26,10 @@ The request and response models already exist in `models.py`. The owner of each 
 
 | Method and path | Request | Response | Part |
 |---|---|---|---|
-| `POST /api/infos` with `file` | multipart, `file` instead of `text` | `EncodeState`, possibly a question | B |
+| `POST /api/infos` with `file` | multipart, `file` instead of `text` (not both): `.txt`, `.md` (UTF-8), `.pdf`, `.docx`. The original is kept under `data/uploads/`. | `EncodeState`, possibly a question; `info.has_file` is true | 413 file over 10 MB, or its text over 12,000 characters; 415 other file types; 422 both `text` and `file`, a damaged file, or no text found (scanned pages, photos); 503 |
 | `GET /api/infos/{id}` | — | `EncodeState` (current state, for page reloads). 404; 409 if the first encoder call failed | B |
 | `POST /api/infos/{id}/follow-ups` | `FollowUpAnswer` | `EncodeState`: the next question, or the draft after at most two answers. 404; 409 no open question; 422 blank; 503 (the question stays open, retry) | B |
-| `GET /api/infos/{id}/file` | — | the original file | B |
+| `GET /api/infos/{id}/file` | — | the original file, as a download under its uploaded name. 404 no such upload, or it was pasted text | B |
 | `GET /api/suggest-contributor` | query `q`*, `exclude`? (repeatable, for example `?exclude=A&exclude=B`: the requester and anyone already asked; never suggested) | `SuggestResponse`; `contributor` is `null` when no record is relevant enough (rule in `retrieval/service.py`, `suggest_contributor`). Errors: 422 missing or blank `q` | A |
 | `POST /api/discussions` | `DiscussionCreate` | `EncodeState` (always a draft) | C |
 | `GET /api/members` | — | `string[]` from `samples/members.json` | D |
