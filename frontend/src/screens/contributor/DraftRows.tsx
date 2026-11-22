@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Select } from "../../components/Select";
 import { Textarea } from "../../components/ui/textarea";
 import { useMembers } from "../../lib/useMembers";
-import { cn } from "../../lib/utils";
+import { cn, reasonParts } from "../../lib/utils";
 import { formatTags, parseTags, type WorkingChange } from "./draft";
 import { NumberPanels, NumberText } from "./NumberText";
 
@@ -422,7 +422,8 @@ export function ChangeRow({
       <p className="mt-1 type-body-small text-ink-secondary">
         {change.reason ? (
           <>
-            Because <NumberText text={change.reason} mode="flag" keys={flagKeys} />
+            {reasonParts(change.reason).lead}
+            <NumberText text={reasonParts(change.reason).text} mode="flag" keys={flagKeys} />
           </>
         ) : (
           <>

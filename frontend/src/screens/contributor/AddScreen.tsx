@@ -1,7 +1,7 @@
 import { Upload } from "lucide-react";
 import { useId, useState } from "react";
 import { useNavigate } from "react-router";
-import { ApiError, createInfo, errorFields } from "../../api/client";
+import { ApiError, FILE_UPLOAD_READY, createInfo, errorFields } from "../../api/client";
 import { Card } from "../../components/Card";
 import { ErrorCard } from "../../components/ErrorCard";
 import { Field } from "../../components/Field";
@@ -21,7 +21,9 @@ type FieldErrors = { title?: string; text?: string; file?: string };
 type Failure = { kind: "model" } | { kind: "unreadable"; fileName: string } | { kind: "other" };
 
 const TITLE_MISSING = "Add a title.";
-const TEXT_MISSING = "Paste the record text, or upload a file instead.";
+const TEXT_MISSING = FILE_UPLOAD_READY
+  ? "Paste the record text, or upload a file instead."
+  : "Paste the record text.";
 const FILE_MISSING = "Choose a file, or paste the text instead.";
 const TITLE_OR_TEXT_MISSING = "Fill in the title and the record text.";
 
@@ -174,10 +176,12 @@ export default function AddScreen() {
           </Field>
 
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-            <TabsList aria-label="How to add the record">
-              <TabsTrigger value="paste">Paste text</TabsTrigger>
-              <TabsTrigger value="file">Upload a file</TabsTrigger>
-            </TabsList>
+            {FILE_UPLOAD_READY && (
+              <TabsList aria-label="How to add the record">
+                <TabsTrigger value="paste">Paste text</TabsTrigger>
+                <TabsTrigger value="file">Upload a file</TabsTrigger>
+              </TabsList>
+            )}
 
             <TabsContent value="paste" className="mt-4">
               <Field

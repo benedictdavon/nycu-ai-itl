@@ -54,6 +54,7 @@ function escapeRegExp(text: string): string {
 const UNIT_PATTERN = [
   ...WORD_UNITS.map(escapeRegExp),
   "[°º]\\s?[Cc]", // 37 °C, 37 ° C, 37 ºC
+  "C", // 37 C, 37C: records often leave out the degree sign
   "[x×]\\s?g", // 10 x g, 10 ×g
 ].join("|");
 
@@ -83,6 +84,7 @@ const UNIT_ALIASES = new Map<string, string>([
   ["seconds", "s"],
   ["sec", "s"],
   ["secs", "s"],
+  ["c", "°c"],
 ]);
 
 /** A comparable form of a number with unit: "1 hour" and "1 h" give the same result. */

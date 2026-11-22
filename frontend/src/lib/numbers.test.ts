@@ -13,7 +13,7 @@ describe("findNumbers", () => {
     expect(found(text)).toEqual([expected]);
   });
 
-  it.each(["37 ° C", "37 ºC", "37°C"])("accepts the temperature spelling %s", (spelling) => {
+  it.each(["37 ° C", "37 ºC", "37°C", "37 C", "37C"])("accepts the temperature spelling %s", (spelling) => {
     expect(found(`Hold at ${spelling} overnight`)).toEqual([spelling]);
   });
 
@@ -84,6 +84,7 @@ describe("normaliseNumber", () => {
 
   it("maps the degree and multiplication variants", () => {
     expect(normaliseNumber("37 ºC")).toBe(normaliseNumber("37 °C"));
+    expect(normaliseNumber("62 C")).toBe(normaliseNumber("62°C"));
     expect(normaliseNumber("2 ×")).toBe(normaliseNumber("2x"));
   });
 
@@ -110,5 +111,9 @@ describe("uncheckedNumbers", () => {
 
   it("returns nothing when every number is in a source", () => {
     expect(uncheckedNumbers(["1 hour"], ["Wait 1 h"])).toEqual([]);
+  });
+
+  it("matches a temperature written without the degree sign in the source", () => {
+    expect(uncheckedNumbers(["Anneal at 62°C"], ["Changed annealing to 62 C"])).toEqual([]);
   });
 });
