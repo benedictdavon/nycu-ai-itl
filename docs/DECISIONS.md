@@ -80,3 +80,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **What:** Single-column screens (Who, To review, Ask's main column) use a 760px reading width (`max-w-reading`), the main-column width of the two-column pattern, and the original record on Check the draft is sticky on desktop. In the Sources side card, project tags are a plain middot-separated text list instead of pills.
 **Why:** Widths differed per screen (Who 560px, To review 1160px, Ask 1112px at 1920 wide), Ask jumped when Sources appeared, and seven tag pills took four rows in a 214px column. We rejected smaller pills (still four rows) and truncated tags (a tooltip does not work on touch).
 **Led by:** Benedict Davon Martono
+
+## 2026-11-22 — How the prompt suite runs and keeps its results
+**What:** `backend/prompt_suite/run.py` runs every case in `prompt_suite/cases/<part>.json` against the real model (it refuses `LLM_BACKEND=fake`) and saves a dated results file under `docs/cp2/prompt_suite/results/`, with the model name and commit but never the server address or key. A case is an input plus properties checked in code (kind, citations, contributors, phrases that must or must not appear, no digits, an uncertainty, at most 30 s), and optionally a `judge` sentence that a person marks by hand in the results file. Decoder cases name their hits by sample file (`R01`, `D01`), so they do not depend on search or the encoder. Part B adds an encoder runner and `cases/encoder.json`.
+**Why:** CP2 item 6 and architecture §5 ask for cases with required properties, run against the model, with results kept. Checks in code make a rerun cheap and comparable; some properties (cause vs fix, a hint that is not an answer) need a person.
+**Alternative rejected:** Running the suite under `pytest` (it would need the model server and the network, which unit tests must not); checking only in code (would miss the cause/fix swap that was the first failure).
+**Led by:** Darius Lung
