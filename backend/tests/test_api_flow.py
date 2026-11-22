@@ -1,10 +1,14 @@
 """The walking skeleton: paste a record, review and confirm the draft, ask about it.
 
-Fake LLM, stub encoder, real search. All names and records are made up.
+Fake LLM, real search. All names and records are made up.
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app import db, llm
+from app.encoder import service as encoder
+from app.encoder.service import MAX_TEXT_CHARS, ModelReply
 from app.models import RecordDraft
 
 ALEX = "Alex Chen"
@@ -20,7 +24,7 @@ def _paste(client: TestClient) -> dict:
 
 
 def test_paste_review_confirm_ask(client: TestClient) -> None:
-    # 1. Alex pastes a record; the stub encoder makes a draft straight away.
+    # 1. Alex pastes a record; with nothing queued, the fake LLM drafts straight away.
     state = _paste(client)
     assert state["result"]["kind"] == "draft"
     record_id = state["record_id"]
@@ -94,3 +98,103 @@ def test_confirm_rules(client: TestClient) -> None:
     assert again.status_code == 409
     edit = client.put(f"/api/records/{record_id}", json={"procedure": "x", "contributors": [ALEX]})
     assert edit.status_code == 409
+
+
+# ---- Part B: follow-up questions (D2-3b) ----
+
+
+def _queue(*questions: str | None) -> None:
+    """Queue one model reply per question; None means the model drafts."""
+    fake = llm.get_llm()
+    assert isinstance(fake, llm.FakeClient)
+    draft = RecordDraft(procedure=TITLE, contributors=[ALEX])
+    fake.queue(*(ModelReply(question=q, draft=draft).model_dump_json() for q in questions))
+
+
+def test_follow_up_questions_then_draft(client: TestClient) -> None:
+    # 1. The encoder asks Alex a question first.
+    _queue("Did you change the recovery step?", "How much plasmid?", "Which strain batch?")
+    state = _paste(client)
+    info_id = state["info"]["id"]
+    assert state["result"] == {
+        "kind": "question",
+        "question": "Did you change the recovery step?",
+        "draft": None,
+    }
+    assert state["follow_ups"] == [
+        {"question": "Did you change the recovery step?", "answer": None}
+    ]
+    assert state["record_id"] is None
+    assert client.get(f"/api/infos/{info_id}").json() == state  # a page reload
+
+    # 2. He answers; it asks a second question.
+    answer = {"answer": "No, same as the SOP."}
+    state = client.post(f"/api/infos/{info_id}/follow-ups", json=answer).json()
+    assert state["result"]["question"] == "How much plasmid?"
+    assert [f["answer"] for f in state["follow_ups"]] == ["No, same as the SOP.", None]
+
+    # 3. After two answers, a third question becomes a gap in the draft.
+    state = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "50 ng."}).json()
+    assert state["result"]["kind"] == "draft"
+    assert state["result"]["draft"]["gaps"] == ["Which strain batch?"]
+    assert len(state["follow_ups"]) == 2
+    assert client.get(f"/api/infos/{info_id}").json() == state
+
+    # 4. The draft is in Alex's inbox, and no question is open any more.
+    inbox = client.get("/api/records", params={"status": "draft", "contributor": ALEX}).json()
+    assert [record["id"] for record in inbox] == [state["record_id"]]
+    again = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "x"})
+    assert again.status_code == 409
+
+
+def test_model_failure_keeps_the_question_open(client: TestClient) -> None:
+    _queue("Did you change the recovery step?")
+    info_id = _paste(client)["info"]["id"]
+    fake = llm.get_llm()
+    assert isinstance(fake, llm.FakeClient)
+    fake.queue("not json")
+    failed = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "No."})
+    assert failed.status_code == 503
+    assert client.get(f"/api/infos/{info_id}").json()["result"]["kind"] == "question"
+
+    retried = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "No."})
+    assert retried.json()["result"]["kind"] == "draft"  # nothing queued: the fake drafts
+
+
+def test_a_second_answer_to_the_same_question_is_409(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A double click or a second tab: another request answers Q1 while the model runs."""
+    _queue("Did you change the recovery step?")
+    info_id = _paste(client)["info"]["id"]
+    real_encode = encoder.encode
+
+    def encode_while_another_request_finishes(info, follow_ups):  # type: ignore[no-untyped-def]
+        other = db.connect(client.app.state.settings.db_path)  # type: ignore[attr-defined]
+        db.answer_follow_up(other, info_id, 1, "First tab's answer.")
+        db.insert_follow_up(other, info_id, "How much plasmid?")
+        other.close()
+        return real_encode(info, follow_ups)
+
+    monkeypatch.setattr(encoder, "encode", encode_while_another_request_finishes)
+    late = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "Second tab's answer."})
+    assert late.status_code == 409
+    state = client.get(f"/api/infos/{info_id}").json()
+    assert [f["answer"] for f in state["follow_ups"]] == ["First tab's answer.", None]
+    assert state["result"]["question"] == "How much plasmid?"
+
+
+def test_follow_up_errors(client: TestClient) -> None:
+    assert client.get("/api/infos/999").status_code == 404
+    assert client.post("/api/infos/999/follow-ups", json={"answer": "x"}).status_code == 404
+    _queue("Did you change the recovery step?")
+    info_id = _paste(client)["info"]["id"]
+    blank = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": " "})
+    assert blank.status_code == 422
+
+
+def test_too_long_text_is_413(client: TestClient) -> None:
+    text = "x" * (MAX_TEXT_CHARS + 1)
+    response = client.post("/api/infos", data={"contributor": ALEX, "title": TITLE, "text": text})
+    assert response.status_code == 413
+    assert client.get("/api/records").json() == []
