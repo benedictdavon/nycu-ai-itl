@@ -1,9 +1,9 @@
 # AI Usage Guidelines
 
 ## 1. What AI tools we plan to use, and what we will use each for
-- We will mainly use OpenAI Codex for brainstorming implementation ideas, generating and revising code, debugging small code issues, and producing boilerplate code. All AI-generated code must be reviewed and tested by a team member before being merged.
-- We will use Codex to generate first drafts of unit tests and technical documentation. A human team member will verify correctness, add missing edge cases, and revise the final version.
-- We will use Google Gemini for research tasks, such as exploring unfamiliar concepts, comparing possible approaches, and gathering background information. Important technical claims or information used in project decisions will be verified by team members before being adopted.
+- We will mainly use OpenAI Codex and Claude Code for brainstorming implementation ideas, generating and revising code, debugging small code issues, and producing boilerplate code. All AI-generated code must be reviewed and tested by a team member before being merged.
+- We will use Codex and Claude Code to generate first drafts of unit tests and technical documentation. A human team member will verify correctness, add missing edge cases, and revise the final version.
+- We will use Claude for research tasks, such as exploring unfamiliar concepts, comparing possible approaches, and gathering background information. Important technical claims or information used in project decisions will be verified by team members before being adopted.
 - We will not rely on AI tools to make final design or architectural decisions without team discussion.
 - We will not use AI-generated code directly for security-sensitive features such as authentication, authorization, or handling sensitive user data without careful human review.
 
