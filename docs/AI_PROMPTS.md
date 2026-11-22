@@ -190,6 +190,88 @@ Prompts that produced code, text or decisions in this repo, as `docs/AI_USAGE_GU
 
     merged, whats next
 
+## Part C: model client, decoder, discussions, prompt suite, prompt card, ask log (2026-11-19 to 2026-11-22)
+
+- **Who:** Claude Opus 5.5 (Claude Code) wrote the code, prompts, tests and docs directly, and ran the live tests against the team's model server. The human (dariuslung) set each task, chose the model and the server setup, decided the "not enough" rule and how a discussion is stored, judged the first prompt-suite run, and approved every commit and push. Two fresh Claude Opus agents (no prior context, no verdicts shown) reviewed the prompt-suite answers; the second one's verdicts are in `docs/cp2/prompt_suite/results/2026-11-22-1445.md`.
+- **PRs:** #14 (`llm.py` for `llama-server`), #15 (decoder prompt, citation check, "not enough" rule), #16 (no proxy for the model client), #26 (`POST /api/discussions`), #27 (prompt suite, model decision), #28 (decoder prompt card), #29 (ask log).
+- **Left out below:** questions about the code, review requests, and the server address.
+
+### Prompts
+
+#14, model client:
+
+    See https://github.com/benedictdavon/nycu-ai-itl/pull/13 I'm thinking of using the RTX 4090 with llama-server on this machine, to run qwen3-4b for the task. Check if the PR is accurate, and what we can change
+
+    IMO it's suit for the task, not the hardware. And my 4090 is a shared hardware, I'd rather not use up all of the available resource
+
+    I don't think I want to use ollama, I don't like their sketchy branding and attribution. [...]
+
+    Merged, pull and let's edit our changes
+
+    Commit. Now let's setup llama-server on this machine and test if we can prompt. Plan
+
+    Shouldn't we edit the .env.example since we don't use ollama anymore anywhere?
+
+#16, from Benedict's #14 review:
+
+    See PR 14 review comment
+
+    Yes, push and reply
+
+#15, decoder:
+
+    Yes, start PR 1 with the citation check, or should we PR now?
+
+    yes, commit it and continue with the prompt
+
+    yes, commit and fix the prompt
+
+    Yes, write it   [the "not enough" rule, architecture §4]
+
+    See PR 15 requested changes
+
+    fix the decoder "increased to 50 ng" issue
+
+#26, discussions:
+
+    Plan PR 2
+
+    Check current main and see if our plan still stands
+
+    Yes, build it
+
+    I think it's their problem   [the text length limit, left to Part B]
+
+#27, prompt suite and model decision:
+
+    Plan the prompt suite runner and cases
+
+    Yes, build it
+
+    I think you should start a clean sub session and ask Opus to judge from a clean state too
+
+    Yes, fail and fix
+
+    Document as known limit
+
+    I mean let a clean Opus mark again
+
+    Yes, write it   [the model decision, 04 §5]
+
+    Isn't this too many PR's at once? I think we can group this into another PR
+
+Brief to the reviewing agents (abridged): judge the decoder's answers strictly from the answers, the case file, the sample records and the decoder prompts only; read-only; for each case with a `judge` sentence give pass or fail with a quote; list any other claim not supported by the cited records, invented direction, wrong citation, cause/fix confusion, or hint that is a full answer. The second agent was also told not to open `docs/`, so it saw no earlier verdict.
+
+#28, prompt card:
+
+    "Write the decoder part of the prompt card", what does this mean
+
+    The CP2's wording is in the repo, so that's all we know. Review your guess, if you think it's ok, proceed to draft
+
+#29, ask log:
+
+    What about log_ask function we said to implement
+
 ## Part B: reading uploaded files (branch `feat/part-b-files`, 2026-11-22)
 
 - **Who:** Claude Opus 5.5 (Claude Code) wrote all code, tests and docs in this branch. The human (李原誌, runnywolf) set the task, chose to build it now, and reviews and tests it before the PR.

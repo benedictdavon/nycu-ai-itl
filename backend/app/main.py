@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from app import db, llm
-from app.api import ask, health, infos, members, records, suggest
+from app.api import ask, discussions, health, infos, members, records, suggest
 from app.config import REPO_ROOT, Settings, get_settings
 
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
@@ -58,7 +58,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """The LLM is unreachable or unusable. The client may retry."""
         return JSONResponse(status_code=503, content={"detail": str(exc)})
 
-    for module in (health, infos, records, ask, suggest, members):
+    for module in (health, infos, records, ask, suggest, members, discussions):
         app.include_router(module.router, prefix="/api")
     if FRONTEND_DIST.is_dir():
         _serve_frontend(app, FRONTEND_DIST)

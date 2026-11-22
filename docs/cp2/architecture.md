@@ -241,7 +241,7 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 **C: decoder** (`app/decoder/`, `app/api/ask.py`, `app/llm.py`)
 - [x] PR 0: `llm.py` talks to `llama-server`'s OpenAI-compatible `/v1/chat/completions` (JSON schema via `response_format`), with settings for the server address and API key in `config.py` and `.env.example`. The tests still pass with `LLM_BACKEND=fake`. The model server setup is in `backend/README.md`.
 - [x] PR 1: a decoder prompt file exists, and `answer()` calls `llm.chat_json`. It cites only records from the hits and names their contributors. The citation check runs in code. Hint mode gives hints, not full steps (D3-1a). The "not enough" rule is written down (§4).
-- [ ] PR 2: `POST /api/discussions` saves a resolved discussion as a draft for the contributor, with no follow-up questions.
+- [x] PR 2: `POST /api/discussions` saves a resolved discussion as a draft for the contributor, with no follow-up questions.
 - [ ] At least 5 decoder cases are in the prompt suite, including no relevant record, hint mode, and a question only a saved discussion answers. At least one documented fail-then-fix cycle (CP2 item 6). The decoder part of the prompt card is written.
 
 **D: frontend** (`frontend/`)

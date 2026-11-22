@@ -65,6 +65,18 @@ def test_paste_review_confirm_ask(client: TestClient) -> None:
     assert nobody.json() == {"contributor": None}
     assert client.get("/api/suggest-contributor", params={"q": " "}).status_code == 422
 
+    # 6. Bea asks Alex directly; they save the resolved discussion (D3-4). Alex confirms the
+    #    draft, and the next requester gets the answer without asking anyone.
+    chat = "Bea Lin: How do I do zebrafish injection?\n\nAlex Chen: Use the 2 nL needle."
+    body = {"requester": BEA, "contributor": ALEX, "question": "zebrafish injection", "text": chat}
+    saved = client.post("/api/discussions", json=body).json()
+    assert saved["info"]["kind"] == "discussion"
+    discussion_id = saved["record_id"]
+    client.post(f"/api/records/{discussion_id}/confirm", json={"confirmed_by": ALEX})
+    again = client.post("/api/ask", json={"question": "zebrafish injection", "requester": BEA})
+    assert again.json()["answer"]["kind"] == "answered"
+    assert [source["id"] for source in again.json()["sources"]] == [discussion_id]
+
 
 def test_drafts_are_not_searchable(client: TestClient) -> None:
     _paste(client)
