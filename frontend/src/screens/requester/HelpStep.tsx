@@ -52,7 +52,7 @@ export function HelpStep({
 
   async function suggest() {
     try {
-      const { contributor } = await suggestContributor(question);
+      const { contributor } = await suggestContributor(question, [me, ...asked]);
       if (contributor && contributor !== me && !asked.includes(contributor)) {
         setSuggested(contributor);
         setNoMatch(false);

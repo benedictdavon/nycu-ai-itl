@@ -72,6 +72,7 @@ describe("Ask: hints", () => {
     expect(ask).toHaveBeenLastCalledWith({ question: QUESTION, requester: ME, hint_mode: false });
     const marker = screen.getByRole("link", { name: "Source 1: Transformation of strain X with plasmid P" });
     expect(marker).toHaveAttribute("href", "/records/1");
+    expect(within(screen.getByRole("list", { name: "Project tags" })).getByText("Project X")).toBeInTheDocument();
   });
 });
 
@@ -128,6 +129,23 @@ describe("Ask: not enough in the records", () => {
     const select = screen.getByRole("combobox", { name: "Who do you want to ask?" });
     expect(within(select).queryByRole("option", { name: "Alex Chen" })).not.toBeInTheDocument();
     expect(within(select).getByRole("option", { name: "Bea Lin" })).toBeInTheDocument();
+  });
+
+  it("asks the server to leave out the requester and anyone already asked", async () => {
+    const user = userEvent.setup();
+    vi.mocked(ask).mockResolvedValueOnce(insufficient());
+    vi.mocked(suggestContributor)
+      .mockResolvedValueOnce({ contributor: "Alex Chen" })
+      .mockResolvedValueOnce({ contributor: null });
+    renderApp("/ask");
+    await askQuestion(user);
+
+    await user.click(await screen.findByRole("radio", { name: "Suggest someone" }));
+    expect(suggestContributor).toHaveBeenLastCalledWith(QUESTION, [ME]);
+
+    await user.click(await screen.findByRole("button", { name: "Not solved: ask someone else" }));
+    await user.click(screen.getByRole("radio", { name: "Suggest someone" }));
+    expect(suggestContributor).toHaveBeenLastCalledWith(QUESTION, [ME, "Alex Chen"]);
   });
 
   it("records the person picked under 'Your open questions' as asking", async () => {

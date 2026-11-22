@@ -7,8 +7,12 @@ export type FieldTone = "default" | "gap";
 export function fieldClasses(tone: FieldTone = "default", className?: string): string {
   return cn(
     "w-full min-h-[2.875rem] rounded-md border bg-paper px-3 py-2.5 type-body text-bench-ink placeholder:text-ink-muted",
+    "transition-[border-color,outline-color] duration-quick ease-out",
+    // Focus: the 1px border turns blue and the 3px outline sits flush against it, so the two read
+    // as one ring. Without offset 0 the global 2px offset leaves a white gap between them.
+    "focus-visible:border-coomassie-blue focus-visible:outline-offset-0",
     "aria-invalid:border-alert-red",
-    tone === "gap" ? "border-tape-edge" : "border-field-edge",
+    tone === "gap" ? "border-tape-edge hover:border-tape-ink" : "border-field-edge hover:border-ink-secondary",
     className,
   );
 }

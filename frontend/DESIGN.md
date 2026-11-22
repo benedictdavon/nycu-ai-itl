@@ -227,6 +227,7 @@ A neutral bench-and-paper base with two signal colours, each with a single job.
 
 - **Container:** max-width 1160px, centred, 24px side padding (16px on phones).
 - **Two-column pattern:** main content plus a side column (the original record, sources, "what happens next"). Main is `flex: 999 1 560px`, side is `flex: 1 1 320px`, with a 32px gap. They stack automatically below about 912px, side column last.
+- **Single-column width:** single-column screens use the reading width (760px), the same as the main column of the two-column pattern at full width, so content edges line up across screens.
 - **Reading width:** answers, leads and explanations stay at or below 66ch even inside wide cards.
 - **Rhythm:** groups of related items are 8 to 12px apart, fields 20 to 24px apart, and sections 28 to 40px apart. There is always more space above a heading than below it.
 - **Header:** the wordmark, then the nav (Ask, Add a record, To review with a count), then the current person at the far end. On phones, the nav becomes a row of three equal tabs under the wordmark.
@@ -234,7 +235,7 @@ A neutral bench-and-paper base with two signal colours, each with a single job.
 
 ## Elevation & Depth
 
-Soft and lifted. Surfaces sit on the bench-grey page as white cards with a hairline border and a gentle, offset shadow. Interactive cards (inbox rows, people, list items that open something) lift a little more on hover. Depth always comes from a real offset and blur, never from a coloured glow.
+Soft and lifted. Surfaces sit on the bench-grey page as white cards with a hairline border and a gentle, offset shadow. Interactive cards (inbox rows, people, list items that open something) lift a little more on hover, and their border turns Field Edge. Depth always comes from a real offset and blur, never from a coloured glow.
 
 ### Shadow Vocabulary
 - **Rest** (`0 1px 2px rgba(24,32,43,0.06), 0 4px 14px rgba(24,32,43,0.05)`): every card and panel at rest.
@@ -258,14 +259,14 @@ Tape labels are the one deliberate exception: almost square (4px), like a strip 
 ### Buttons
 - **Shape:** gently rounded (10px), at least 48px tall (44px for text buttons).
 - **Primary:** Coomassie Blue fill, white label, 0 22px padding. Exactly one per view or panel. The label names the result ("Draft the record", "Confirm and publish", "Copy message"), never "Submit".
-- **Hover / Focus:** hover deepens to Coomassie Deep over 160ms. Focus shows a 3px Coomassie Blue ring with a 2px offset. Disabled uses a Rule fill with Ink Secondary text, and always carries a nearby reason ("Tick the box above first").
+- **Hover / Focus:** hover deepens to Coomassie Deep over 160ms. Secondary hover: Ink Secondary border and Bench Grey fill. Text button hover: Sage Chip fill and an underline. Focus shows a 3px Coomassie Blue ring with a 2px offset. Disabled uses a Rule fill with Ink Secondary text, and always carries a nearby reason ("Tick the box above first").
 - **Secondary:** paper fill, 1px Field Edge border, Bench Ink label.
 - **Text button:** no fill, Coomassie Blue label. Used for "Edit" on draft rows, "Add one" and similar inline actions. Destructive text buttons ("Discard draft") use Alert Ink.
 
 ### Chips
-- **Tag:** Sage Chip pill, label type, with an optional 32px remove button that has an `aria-label`.
+- **Tag:** Sage Chip pill, label type, with an optional 32px remove button that has an `aria-label`. In the Sources side card, tags are a plain Ink Secondary list separated by middots, so they don't crowd the card.
 - **Person:** Coomassie Wash pill. The uploader's own chip has no remove control and reads "(you, always kept)".
-- **Add chip:** paper fill with a dashed Field Edge border and a plus icon ("Add someone", "Add a tag").
+- **Add chip:** paper fill with a dashed Field Edge border and a plus icon ("Add someone", "Add a tag"). Hover: Ink Secondary border and Bench Grey fill.
 - **Radio choice:** two pill-shaped buttons in a `role="radiogroup"`. Selected is a Coomassie Blue fill with a white label; unselected is paper with a Coomassie Blue 2px border. Nothing is selected by default.
 
 ### Cards / Containers
@@ -277,13 +278,13 @@ Tape labels are the one deliberate exception: almost square (4px), like a strip 
 
 ### Inputs / Fields
 - **Style:** Paper fill, 1px Field Edge border, 10px radius, at least 46px tall. The label always sits above the field. An optional field says "(optional)" in Ink Muted after the label.
-- **Focus:** 3px Coomassie Blue ring; Coomassie Blue caret.
+- **Hover:** Ink Secondary border (Tape Ink in a gap panel). **Focus:** the border turns Coomassie Blue and a 3px Coomassie Blue ring sits flush against it, so the two read as one ring; Coomassie Blue caret.
 - **In a gap panel:** Tape Edge border, with the placeholder "Leave empty if you don't know".
 - **Error:** Alert Red border and an Alert Ink message under the field that names the problem and the fix.
 - **Hidden file input:** visually hidden inside its drop-zone label (not `opacity: 0`), so the label shows the focus ring.
 
 ### Navigation
-- Label type, 44px tall, 10px radius. Active item: Coomassie Wash fill with Coomassie Blue text and `aria-current="page"`. Inactive: Bench Ink text; hover adds a Paper Sunk fill.
+- Label type, 44px tall, 10px radius. Active item: Coomassie Wash fill with Coomassie Blue text and `aria-current="page"`. Inactive: Bench Ink text; hover adds a Sage Chip fill.
 - The To review item carries a Label Tape count badge (22px pill) for questions and drafts waiting.
 
 ### Source marker (signature)

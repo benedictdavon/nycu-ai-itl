@@ -173,7 +173,15 @@ describe("other endpoints", () => {
     const { url, init } = lastCall(fetchMock);
     expect(url.pathname).toBe("/api/suggest-contributor");
     expect(url.searchParams.get("q")).toBe("how much plasmid & what temp?");
+    expect(url.searchParams.getAll("exclude")).toEqual([]);
     expect(init.method).toBeUndefined();
+  });
+
+  it("suggestContributor repeats exclude for each name", async () => {
+    const fetchMock = stubFetch(() => jsonResponse(200, { contributor: null }));
+    await suggestContributor("low yield?", ["Chris Wu", "Bea Lin"]);
+    const { url } = lastCall(fetchMock);
+    expect(url.searchParams.getAll("exclude")).toEqual(["Chris Wu", "Bea Lin"]);
   });
 
   it("getMembers reads the list with GET", async () => {

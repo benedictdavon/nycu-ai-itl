@@ -164,8 +164,10 @@ export function ask(body: AskRequest): Promise<AskResponse> {
   return sendJson<AskResponse>("/api/ask", "POST", body);
 }
 
-export function suggestContributor(q: string): Promise<SuggestResponse> {
+/** `exclude`: people never to suggest (the requester and anyone already asked). */
+export function suggestContributor(q: string, exclude: string[] = []): Promise<SuggestResponse> {
   const params = new URLSearchParams({ q });
+  for (const name of exclude) params.append("exclude", name);
   return get<SuggestResponse>(`/api/suggest-contributor?${params.toString()}`);
 }
 
