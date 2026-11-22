@@ -116,3 +116,10 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** `pypdf` and `python-docx` (with `lxml`) install from wheels with no system packages, so `uv sync` is enough on every laptop. 10 MB is far above a text record and still small for the laptop. A random folder keeps the original name for the download without two uploads overwriting each other or a name reaching outside `uploads/`.
 **Alternative rejected:** OCR for scanned pages (a large system dependency, and its errors would reach the draft unseen); keeping the file bytes in SQLite (architecture §6 asks for the original under `data/`, and the database would grow with every PDF).
 **Led by:** 李原誌
+
+## 2026-11-22 — Add a record: pasted text only until the server reads files
+**What:** The Add a record screen hides the "Upload a file" tab while `FILE_UPLOAD_READY` (`frontend/src/api/client.ts`) is false, and the "text missing" message no longer mentions a file. The upload code and its tests stay; setting the constant to true brings the tab back when Part B's file upload (architecture §6, B PR 1) is merged.
+**Why:** In the Nov 22 run against the real model, the tab offered something the backend cannot do yet: `POST /api/infos` takes only `text`, so every upload failed. Hiding it keeps the demo and the user tests on what works.
+**Alternative rejected:** Keeping the tab with an error after upload (users would try it and fail); deleting the upload code (it would have to be rewritten once Part B adds files).
+**Led by:** Benedict Davon Martono
+**Update (Nov 22):** Part B's file upload is merged (#32), so `FILE_UPLOAD_READY` is now true and the tab is back.
