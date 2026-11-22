@@ -86,3 +86,19 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Keeps `models.py` and the `infos` table unchanged, and the raw record stays exactly what the two people wrote (D1-3).
 **Alternative rejected:** A `requester` column on `infos` (a `models.py` and schema change for a name the chat already shows); writing "Asked by ..." into `text` (changes the raw record).
 **Led by:** Darius Lung
+
+## 2026-11-22 — How the prompt suite runs and keeps its results
+**What:** `backend/prompt_suite/run.py` runs every case in `prompt_suite/cases/<part>.json` against the real model (it refuses `LLM_BACKEND=fake`) and saves a dated results file under `docs/cp2/prompt_suite/results/`, with the model name and commit but never the server address or key. A case is an input plus properties checked in code (kind, citations, contributors, phrases that must or must not appear, no digits, an uncertainty, at most 30 s), and optionally a `judge` sentence that a person marks by hand in the results file. Decoder cases name their hits by sample file (`R01`, `D01`), so they do not depend on search or the encoder. Part B adds an encoder runner and `cases/encoder.json`.
+**Why:** CP2 item 6 and architecture §5 ask for cases with required properties, run against the model, with results kept. Checks in code make a rerun cheap and comparable; some properties (cause vs fix, a hint that is not an answer) need a person.
+**Alternative rejected:** Running the suite under `pytest` (it would need the model server and the network, which unit tests must not); checking only in code (would miss the cause/fix swap that was the first failure).
+**Led by:** Darius Lung
+
+## 2026-11-22 — Model: Qwen3-4B Q8_0 on llama-server (04 §5)
+**What:** The encoder and decoder use Qwen3-4B (Q8_0 GGUF) on `llama-server`, hosted by the team on one RTX 4090 of a shared lab machine (about 7 GB of GPU memory) and reached over Tailscale. Settings: temperature 0, thinking off, JSON schema output, context 8192 tokens with 2 parallel requests. CP1 (04 §5) left the model open until CP2. Tested so far:
+- **Speed:** 0.4–0.7 s per decoder answer on the prompt suite's cases; about 4 s for an encoder draft in the first test. Far under the 30 s limit (architecture §4).
+- **Valid JSON:** every reply in the decoder suite runs validated as `Answer` (the schema constrains the shape; the values are checked in code).
+- **Invented details:** the decoder suite checks for invented numbers and directions of change (`plasmid-amount`, the hint cases). Two failures were fixed by prompt changes; one remains, a hint that gives away an added step (`docs/cp2/prompt_suite/fail_then_fix.md`). Latest run: 6 of 7 decoder cases pass (`docs/cp2/prompt_suite/results/`).
+- **Not tested yet:** the encoder cases (Part B), and the fallback, a smaller model on the demo laptop's 8 GB GPU.
+**Why:** Records go to no outside AI service (04 §5). A 4B model is enough for answering from a few short records and drafting `M` from one record, it replies in under a second, and it leaves most of a shared GPU to its other users. A Q8_0 copy loses little quality against the full model and fits easily.
+**Alternative rejected:** Qwen3-8B or 14B (about 10–19 GB, more of the shared GPU for no failure the 4B model has shown that a bigger one is known to fix; the first choice if the suite starts failing); a third-party model API (sends record text outside, which 04 §5 rules out).
+**Led by:** Darius Lung

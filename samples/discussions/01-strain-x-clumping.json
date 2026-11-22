@@ -1,0 +1,24 @@
+{
+  "info": {
+    "kind": "discussion",
+    "contributor": "Alex Chen",
+    "title": "Why did strain X clump after washing?",
+    "link": null,
+    "project_tags": []
+  },
+  "record": {
+    "procedure": "Washing strain X cells during transformation with plasmid P",
+    "based_on": "Drive SOP \"Transformation v2\"",
+    "contributors": ["Alex Chen"],
+    "project_tags": [],
+    "changes": [
+      {
+        "what": "Wash volume doubled",
+        "reason": "with the SOP volume the cells were pelleted into a small volume and stuck together while still concentrated"
+      },
+      {"what": "Recovery step unchanged from the SOP", "reason": null}
+    ],
+    "troubleshooting": "Cells clumped after washing on the first try. The clumping came from the wash volume, not the plasmid; doubling the wash volume spread the cells out and the clumping stopped. On the second try 50 ng plasmid was used and the colonies were normal.",
+    "gaps": []
+  }
+}
