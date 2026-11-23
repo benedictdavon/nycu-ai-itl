@@ -28,16 +28,52 @@ Settings come from environment variables or a `.env` file in the **repo root** (
 
 The app calls [`llama-server`](https://github.com/ggml-org/llama.cpp) (llama.cpp) through its OpenAI-compatible API. Records never go to an outside AI service.
 
-Host side (Darius's shared GPU; keep it small, and pin one GPU):
+Host side (Darius's shared GPU; keep it small, and pin one GPU). Build only the server, with CUDA (`89` is the RTX 40 series), and download the model:
 
 ```sh
-CUDA_VISIBLE_DEVICES=1 llama-server \
-  -hf Qwen/Qwen3-4B-GGUF:Q8_0 \
-  --jinja -ngl 99 -c 8192 -np 2 \
+git clone https://github.com/ggml-org/llama.cpp ~/llama.cpp && cd ~/llama.cpp
+cmake -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89 -DLLAMA_CURL=OFF
+cmake --build build --target llama-server -j
+mkdir -p ~/models
+curl -L -o ~/models/Qwen3-4B-Q8_0.gguf \
+  https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q8_0.gguf
+```
+
+Make the key file once with `mkdir -p ~/.config/labknow && (umask 077; openssl rand -hex 16 > ~/.config/labknow/llm_api_key)`, then run:
+
+```sh
+CUDA_VISIBLE_DEVICES=1 ~/llama.cpp/build/bin/llama-server \
+  -m ~/models/Qwen3-4B-Q8_0.gguf \
+  --jinja -ngl 99 -c 16384 -np 2 --sleep-idle-seconds 600 \
   --host <tailscale-ip> --port 8080 --api-key-file ~/.config/labknow/llm_api_key
 ```
 
-Make the key file once with `mkdir -p ~/.config/labknow && (umask 077; openssl rand -hex 16 > ~/.config/labknow/llm_api_key)`. Use `--api-key-file`, not `--api-key`: on a shared machine, every user can read command-line arguments with `ps`. `--jinja` is needed so the app can switch Qwen3 thinking off. `-c 8192 -np 2` means two parallel requests with 4096 tokens each. Use `--host 127.0.0.1` when running locally, never `0.0.0.0`.
+- `--api-key-file`, not `--api-key`: on a shared machine, every user can read command-line arguments with `ps`.
+- `--jinja` is needed so the app can switch Qwen3 thinking off.
+- `-c 16384 -np 2`: two requests at a time, and the context is split between them, so each request (prompt and reply together) gets **8192 tokens**: about 2000 for the decoder, and room for a long upload sent to the encoder. With `-c 8192` it was 4096 each; the extra context costs about 1.2 GB.
+- `--sleep-idle-seconds 600`: after 10 minutes with no request, the model is unloaded and the GPU memory freed (about 7 GB down to 0.6 GB). The next request reloads it and waits, which added under 1 s in our test. `/health` stays 200 while asleep and does not wake it. Before a demo, send one request a minute ahead.
+- `--host`: the Tailscale IP, or `127.0.0.1` when running locally, never `0.0.0.0`.
+
+To keep it running, use a systemd **user** service (no admin rights needed). Put this in `~/.config/systemd/user/llama-server.service`:
+
+```ini
+[Unit]
+Description=llama-server (Qwen3-4B) for LabKnow
+After=network-online.target
+
+[Service]
+Environment=CUDA_VISIBLE_DEVICES=1
+ExecStart=%h/llama.cpp/build/bin/llama-server -m %h/models/Qwen3-4B-Q8_0.gguf --jinja -ngl 99 -c 16384 -np 2 --sleep-idle-seconds 600 --host <tailscale-ip> --port 8080 --api-key-file %h/.config/labknow/llm_api_key
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+Then `systemctl --user daemon-reload && systemctl --user enable --now llama-server`, and `loginctl enable-linger $USER` so it starts at boot without a login. It restarts about 10 s after a crash, and at boot it retries until Tailscale has its IP. The log is `journalctl --user -u llama-server`.
+
+Measured on the RTX 4090 with Qwen3-4B Q8_0: a short decoder answer takes about 0.4–0.7 s, and a `RecordDraft` JSON reply about 4 s.
 
 App side, in `.env`:
 
