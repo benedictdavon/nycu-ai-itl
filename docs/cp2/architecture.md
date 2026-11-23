@@ -234,9 +234,9 @@ Each part is done when its PRs are merged with every box below ticked. Progress 
 - [ ] The merge plan entry is in `DECISIONS.md` (CP2 item 10).
 
 **B: ingest and encoder** (`app/ingest/`, `app/encoder/`, `app/api/infos.py`)
-- [ ] PR 1: `POST /api/infos` takes a file. `.txt`, `.md`, `.pdf` and `.docx` are read, the original is saved under `data/`, and `GET /api/infos/{id}/file` returns it. Size limit and unsupported types return clear errors.
-- [ ] PR 2: an encoder prompt file exists, and `encode()` calls `llm.chat_json`. Follow-up questions work (`follow_ups` table, `POST /api/infos/{id}/follow-ups`, `GET /api/infos/{id}` for reloads), at most two, enforced in code. The uploader stays a contributor.
-- [ ] At least 5 encoder cases are in the prompt suite, typical and edge (for example an unclear record, or a record with nothing to ask). The encoder part of the prompt card is written.
+- [x] PR 1: `POST /api/infos` takes a file. `.txt`, `.md`, `.pdf` and `.docx` are read, the original is saved under `data/`, and `GET /api/infos/{id}/file` returns it. Size limit and unsupported types return clear errors.
+- [x] PR 2: an encoder prompt file exists, and `encode()` calls `llm.chat_json`. Follow-up questions work (`follow_ups` table, `POST /api/infos/{id}/follow-ups`, `GET /api/infos/{id}` for reloads), at most two, enforced in code. The uploader stays a contributor.
+- [x] At least 5 encoder cases are in the prompt suite, typical and edge (for example an unclear record, or a record with nothing to ask). The encoder part of the prompt card is written.
 
 **C: decoder** (`app/decoder/`, `app/api/ask.py`, `app/llm.py`)
 - [x] PR 0: `llm.py` talks to `llama-server`'s OpenAI-compatible `/v1/chat/completions` (JSON schema via `response_format`), with settings for the server address and API key in `config.py` and `.env.example`. The tests still pass with `LLM_BACKEND=fake`. The model server setup is in `backend/README.md`.
