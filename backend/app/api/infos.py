@@ -47,7 +47,7 @@ def _uploads(settings: Settings) -> Path:
 
 def _read_file(name: str, file: UploadFile) -> tuple[str, bytes]:
     """The file's text and bytes, or a clear error the Add screen can show."""
-    data = file.file.read(ingest.MAX_FILE_BYTES + 1)  # 多讀 1 byte，才知道有沒有超過
+    data = file.file.read(ingest.MAX_FILE_BYTES + 1)  # one byte more tells if it is over
     if len(data) > ingest.MAX_FILE_BYTES:
         limit = ingest.MAX_FILE_BYTES // (1024 * 1024)
         raise HTTPException(status_code=413, detail=f"{name} is over {limit} MB.")
@@ -103,7 +103,7 @@ def create_info(
         raise HTTPException(status_code=422, detail="Send the text or a file, not both.")
     name, data = "", b""
     if file is not None:
-        name = Path(file.filename or "").name  # 只留檔名，不信任使用者給的路徑
+        name = Path(file.filename or "").name  # the name only, never the client's path
         text, data = _read_file(name, file)
     if len(text) > encoder.MAX_TEXT_CHARS:
         raise HTTPException(
@@ -112,7 +112,7 @@ def create_info(
             f" {encoder.MAX_TEXT_CHARS:,}. Split it into smaller records.",
         )
     file_path = None
-    if file is not None:  # 檢查都通過才存檔，被拒絕的檔案不會留在 data/
+    if file is not None:  # only after every check, so a refused file is not kept
         file_path = _save_file(settings, name, data)
     info = db.insert_info(
         conn,
