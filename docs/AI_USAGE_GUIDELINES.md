@@ -11,6 +11,14 @@
 
 One-off debugging questions or syntax lookups don't need a log entry — only prompts that produced code, text, or decisions that ended up in the repo.
 
-## 3. How we will handle disagreements about AI output quality
+Every PR must say which AI tool and model were used, what they produced, and what the author changed or verified. For AI output included in the change, add a short prompt summary or link to the prompt log. Write “None” when the PR received no AI assistance.
 
-We will perform absolute reviews from the PR owner. Reviews will be based on code guidelines co-defined by all of us (currently none). When a PR faces an issue that cannot be decided independently, a meeting can be called for discussion. We may offer our opinions for reference, but the final decision still lies with the PR owner. PR reviews require a brief explanation, such as citing compliance with code guidelines, noting a consensus reached after discussion and vote, or stating that the PR owner was persuaded by [Team Member] due to [Reason].
+## 3. How we review changes and resolve disagreements
+
+The PR author reviews and tests their own changes before asking for review. Before merge, a teammate other than the author records which files they reviewed, explains the changed behavior and one failure case, and links to the checks they ran. Split the PR if the reviewer cannot cover the full change.
+
+Reviews will be based on code guidelines co-defined by all of us (currently none). When a PR faces an issue that cannot be decided independently, a meeting can be called for discussion. We may offer our opinions for reference, but the final decision still lies with the PR owner. PR reviews require a brief explanation, such as citing compliance with code guidelines, noting a consensus reached after discussion and vote, or stating that the PR owner was persuaded by [Team Member] due to [Reason].
+
+## 4. How we test changes to AI behavior
+
+A PR that changes a prompt, model, or how the app handles model output must include before-and-after results from the same cases. Describe any failures that remain. Add a regression case for any new failure the change addresses.
