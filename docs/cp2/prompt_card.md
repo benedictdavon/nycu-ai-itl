@@ -136,7 +136,7 @@ The model returns one `ModelReply`: a `draft` (`RecordDraft` in `models.py`) and
   - [`tests/test_api_flow.py`](../../backend/tests/test_api_flow.py) covers questions then a draft, a model failure, double answers and the text limit.
 - **The prompt suite against the real model:**
   - 9 encoder cases in [`prompt_suite/cases/encoder.json`](../../backend/prompt_suite/cases/encoder.json): a complete record, a record full of values, a change with no written reason, an unclear record that must be asked about, every question skipped, a discussion, an answer that contradicts the record (#39), and two short records that name no SOP (#40).
-  - Latest run: 6 of 9 pass the automatic checks ([results/2026-11-25-1533.md](prompt_suite/results/2026-11-25-1533.md)). The three failures are needless questions (see below). Of the five judged properties, four fail, three of them because the draft has no field for results (see below); `enc-unclear` is not marked yet.
+  - Latest run: 6 of 9 pass the automatic checks ([results/2026-11-25-1533.md](prompt_suite/results/2026-11-25-1533.md)). The three failures are needless questions (see below). Of the five judged properties, one passes (`enc-unclear`) and four fail, three of them because the draft has no field for results (see below).
 - **Fail-then-fix** ([`fail_then_fix_encoder.md`](prompt_suite/fail_then_fix_encoder.md)):
   1. Repeated questions and guessed reasons, fixed in code and in the prompt.
   2. The requester listed as a contributor, fixed in code.
