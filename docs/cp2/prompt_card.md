@@ -135,16 +135,19 @@ The model returns one `ModelReply`: a `draft` (`RecordDraft` in `models.py`) and
   - [`tests/test_encoder.py`](../../backend/tests/test_encoder.py) covers the question limit, discussions, repeated questions and gaps, unused answers, contributors and tags.
   - [`tests/test_api_flow.py`](../../backend/tests/test_api_flow.py) covers questions then a draft, a model failure, double answers and the text limit.
 - **The prompt suite against the real model:**
-  - 7 encoder cases in [`prompt_suite/cases/encoder.json`](../../backend/prompt_suite/cases/encoder.json): a complete record, a record full of values, a change with no written reason, an unclear record that must be asked about, every question skipped, a discussion, and an answer that contradicts the record (`enc-answer-conflict`, #39, not yet run on the real model).
-  - Latest run: 4 of 6 pass the automatic checks, and 2 of the 3 judged properties pass ([results/2026-11-22-2105.md](prompt_suite/results/2026-11-22-2105.md)). `enc-no-reason` passes its checks but fails its judged property (see below).
+  - 9 encoder cases in [`prompt_suite/cases/encoder.json`](../../backend/prompt_suite/cases/encoder.json): a complete record, a record full of values, a change with no written reason, an unclear record that must be asked about, every question skipped, a discussion, an answer that contradicts the record (#39), and two short records that name no SOP (#40).
+  - Latest run: 6 of 9 pass the automatic checks ([results/2026-11-25-1533.md](prompt_suite/results/2026-11-25-1533.md)). The three failures are needless questions (see below). Of the five judged properties, four fail, three of them because the draft has no field for results (see below); `enc-unclear` is not marked yet.
 - **Fail-then-fix** ([`fail_then_fix_encoder.md`](prompt_suite/fail_then_fix_encoder.md)):
   1. Repeated questions and guessed reasons, fixed in code and in the prompt.
   2. The requester listed as a contributor, fixed in code.
   3. Questions the record already answers, not fixed (see below).
+  4. Results listed as changes on short records (#40), fixed in the prompt; questions about what a short record says, not fixed.
 
 ### Known limits
 
 - **Needless questions:** the model sometimes asks what a complete record already says. On record 01 it asks why the wash volume was doubled, although the record says the cells clumped with the SOP volume. It then leaves that `reason` null. Two stricter question rules were tried; each made the model guess reasons again, so the prompt was kept. A needless question costs one "Skip".
+- **No place for results.** The draft has no field for a result or observation (a count, a band size, how long something took). Since cycle 4 the model no longer lists them as `changes`, but it often leaves them out of the draft. The contributor sees the original record next to the draft. A `results` field would need a change to `models.py`, which every part owner must review.
+- **Needless questions on short records** (#40): on "Green apple took 3 years to grow …" the model still asks how long the green apple took in 2 of 5 runs with different titles. An example in the prompt cut this to 1 of 5 but made `enc-no-reason` guess a reason again, so it was backed out.
 - **`based_on` is often null** even when the record says "following Drive SOP …". Asked alone, the model finds it; among all the fields it misses it. The contributor fills it in on review.
 - **A result can go missing.** On record 04 the draft leaves out the efficiency before and after the extra cold wash (about 10^4 and 10^5 colonies per microgram). It gives no reason, as it should, but it drops the result too, and `troubleshooting` is null. The contributor sees the original record next to the draft and can add it on review.
 - **Reasons that are close to the record but not in it,** for example "to eliminate non-specific bands" for record 02, where the record gives the bands before and after but no reason. The contributor reviews every draft.

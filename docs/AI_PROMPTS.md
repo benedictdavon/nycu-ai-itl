@@ -322,3 +322,9 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 - **Who:** Claude Opus 5.5 (Claude Code) read #39 and #40, proposed the fix, and wrote the code, tests, prompt-suite case and docs directly (no subagent). The human (李原誌, runnywolf) chose to fix #39 first and reviews and tests it before the PR.
 - **Prompts** (translated from Chinese): "Please look at the current PR bugs", then "Fix 39 first".
 - **Choices Claude made, for the human to check:** only answers with numbers are checked; the gap names the answer and its question and does not pick a value; test answers like "A1." and "50 ng." were changed to answers without numbers, because the new check would (correctly) put them in `gaps`. See the matching entry in `docs/DECISIONS.md`.
+
+## Part B: short records, results are not changes (branch `fix/encoder-short-records`, 2026-11-25)
+
+- **Who:** Claude Opus 5.5 (Claude Code) reproduced #40 on the team's model server, tried the prompt changes, ran the suite and wrote the prompt change, cases, check, test and docs directly (no subagent). The human (李原誌, runnywolf) asked to fix #40 next and reviews and tests it before the PR.
+- **Prompt** (translated from Chinese): after Claude proposed to start #40, the human replied "ok".
+- **Choices Claude made, for the human to check:** kept only the `changes` sentence; backed out the question example because `enc-no-reason` failed again; did not add a `results` field, because that changes `models.py`. The judged lines of run 2026-11-25-1533 are left for the human to mark.

@@ -57,6 +57,7 @@ ENCODER_EXPECT = {
     "must_not_include",
     "no_invented_numbers",
     "answers_used",
+    "no_changes",
 }
 SKIPPED = encoder.SKIPPED
 NUMBER = encoder.NUMBER
@@ -181,6 +182,8 @@ def check_draft(
         and bool(draft.troubleshooting) != expect["has_troubleshooting"]
     ):
         failed.append(f"troubleshooting is {draft.troubleshooting!r}")
+    if expect.get("no_changes") and draft.changes:
+        failed.append(f"changes are {[change.what for change in draft.changes]}, expected none")
     if "has_gaps" in expect and bool(draft.gaps) != expect["has_gaps"]:
         failed.append(f"gaps are {draft.gaps}")
     for phrase in expect.get("must_not_include", []):

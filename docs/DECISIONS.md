@@ -136,3 +136,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Benedict found (#39) that when an answer contradicts the record (record: 3 years, answer: 5 years), the model keeps the record's value and the answer disappears, while the review screen says every number checked out. CLAUDE.md puts guards in code. Code cannot tell which value is right, so it shows the conflict and the contributor decides.
 **Alternative rejected:** A prompt rule only (cycle 3 showed that each new rule made another case worse); replacing the record's value with the answer's (the answer can be the wrong one, and code cannot tell which number in the draft it corrects); checking answers without numbers (word overlap would flag many answers the draft did use).
 **Led by:** 李原誌
+
+## 2026-11-25 — Part B: results are not changes, and short records (#40)
+**What:** One sentence added to `changes` in `encoder/prompts/system.md`: a result or observation is not a change, and with no base protocol and nothing done differently, `changes` is empty. Two cases (`enc-short-no-sop`, `enc-short-observation`) and a `no_changes` check in the prompt suite.
+**Why:** On a short record with no SOP the model listed the record's facts as changes, with reasons like "Record states this" (#40). The sentence fixed it in every run that showed it, and no other case got worse (`docs/cp2/prompt_suite/fail_then_fix_encoder.md`, cycle 4).
+**Alternative rejected:** An example in the question rules against asking what the record says (fewer needless questions, but `enc-no-reason` guessed a reason again); a code check for needless questions (code cannot tell reliably whether a question is answered by the record); a `results` field in the draft (the real fix for results that go missing, but it changes `models.py`, which needs every part owner's review: proposed, not done here).
+**Led by:** 李原誌
