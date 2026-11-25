@@ -84,5 +84,22 @@
       "has_troubleshooting": true,
       "no_invented_numbers": true
     }
+  },
+  {
+    "id": "enc-answer-conflict",
+    "about": "An answer that contradicts the record (#39): the answer's value is not lost",
+    "info": {
+      "kind": "upload",
+      "contributor": "Bea Lin",
+      "title": "Apple growth",
+      "text": "Green apple took 3 years to grow, and have a mass of 500gr. Red apple has a mass of 300gr"
+    },
+    "answers": ["5 years"],
+    "expect": {
+      "contributors": ["Bea Lin"],
+      "has_gaps": true,
+      "answers_used": true
+    },
+    "judge": "If 5 years was asked and answered, the draft shows both 3 and 5 years and does not silently keep one."
   }
 ]

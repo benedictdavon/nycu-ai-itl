@@ -316,3 +316,9 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
     Do we push the CLAUDE.md?
 
     Yes, should we go ontop of the darius PR for this?
+
+## Part B: an unused follow-up answer becomes a gap (branch `fix/encoder-answer-conflict`, 2026-11-25)
+
+- **Who:** Claude Opus 5.5 (Claude Code) read #39 and #40, proposed the fix, and wrote the code, tests, prompt-suite case and docs directly (no subagent). The human (李原誌, runnywolf) chose to fix #39 first and reviews and tests it before the PR.
+- **Prompts** (translated from Chinese): "Please look at the current PR bugs", then "Fix 39 first".
+- **Choices Claude made, for the human to check:** only answers with numbers are checked; the gap names the answer and its question and does not pick a value; test answers like "A1." and "50 ng." were changed to answers without numbers, because the new check would (correctly) put them in `gaps`. See the matching entry in `docs/DECISIONS.md`.

@@ -1,9 +1,11 @@
 """Encoder: a draft M from an Info, or one follow-up question (D2-3a, D2-3b).
 
 Asks the model, then enforces the rules in code (architecture.md §3, Part B): at most two
-questions, none for a saved discussion, and the uploader always stays a contributor.
+questions, none for a saved discussion, the uploader always stays a contributor, and an answer
+the draft does not use is never lost silently.
 """
 
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -17,6 +19,8 @@ MAX_QUESTIONS = 2  # D2-3b: at most two follow-up questions per record
 # The model server has an 8192-token context. Lab text with numbers and units runs at about
 # 3-4 characters per token, so 12,000 characters leave room for the prompt and the reply.
 MAX_TEXT_CHARS = 12_000
+SKIPPED = "I don't know"  # what the Follow-up screen sends for "Skip"
+NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 
 class ModelReply(BaseModel):
@@ -45,16 +49,39 @@ def _format_info(info: Info, follow_ups: list[FollowUp]) -> str:
     return "\n".join(lines)
 
 
-def _with_rules(draft: RecordDraft, info: Info, unasked: str | None) -> RecordDraft:
-    """The uploader first in contributors (D1-4), the upload's tags kept, an unasked question
-    in gaps, and no gap twice. A discussion's only contributor is the person who answered: the
-    model also listed the requester, who only asked (prompt suite, enc-discussion)."""
+def _unused_answers(draft: RecordDraft, follow_ups: list[FollowUp]) -> list[str]:
+    """A gap for each answer with a number the draft does not have (#39).
+
+    The model can keep the record's value and drop an answer that says otherwise ("3 years"
+    in the record, "5 years" in the answer). Code cannot tell which value is right, so the
+    contributor sees both on the review screen. Answers without numbers are not checked.
+    """
+    used = set(NUMBER.findall(draft.model_dump_json()))
+    gaps = []
+    for follow_up in follow_ups:
+        answer = (follow_up.answer or "").strip()
+        if answer == SKIPPED or set(NUMBER.findall(answer)) <= used:
+            continue
+        gaps.append(
+            f'The answer "{answer}" (to "{follow_up.question}") is not in the draft;'
+            " check it against the record."
+        )
+    return gaps
+
+
+def _with_rules(
+    draft: RecordDraft, info: Info, follow_ups: list[FollowUp], unasked: str | None
+) -> RecordDraft:
+    """The uploader first in contributors (D1-4), the upload's tags kept, an unused answer and
+    an unasked question in gaps, and no gap twice. A discussion's only contributor is the
+    person who answered: the model also listed the requester, who only asked (prompt suite,
+    enc-discussion)."""
     names = [info.contributor]
     if info.kind == "upload":
         names += [name.strip() for name in draft.contributors]
     tags = [*info.project_tags, *(tag.strip() for tag in draft.project_tags)]
     gaps: dict[str, str] = {}  # by _same(), keeping the first wording and the order
-    for gap in [*draft.gaps, unasked or ""]:
+    for gap in [*draft.gaps, *_unused_answers(draft, follow_ups), unasked or ""]:
         if gap.strip():
             gaps.setdefault(_same(gap), gap.strip())
     return draft.model_copy(
@@ -91,4 +118,4 @@ def encode(info: Info, follow_ups: list[FollowUp]) -> EncoderResult:
         question = None
     if question and may_ask:
         return EncoderResult(kind="question", question=question)
-    return EncoderResult(kind="draft", draft=_with_rules(reply.draft, info, question))
+    return EncoderResult(kind="draft", draft=_with_rules(reply.draft, info, follow_ups, question))
