@@ -135,10 +135,14 @@ def test_follow_up_questions_then_draft(client: TestClient) -> None:
     assert state["result"]["question"] == "How much plasmid?"
     assert [f["answer"] for f in state["follow_ups"]] == ["No, same as the SOP.", None]
 
-    # 3. After two answers, a third question becomes a gap in the draft.
-    state = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "As usual."}).json()
+    # 3. After two answers, a third question becomes a gap in the draft. The answer "50 ng." is
+    #    not in the model's draft, so it becomes a gap too (#39).
+    state = client.post(f"/api/infos/{info_id}/follow-ups", json={"answer": "50 ng."}).json()
     assert state["result"]["kind"] == "draft"
-    assert state["result"]["draft"]["gaps"] == ["Which strain batch?"]
+    assert state["result"]["draft"]["gaps"] == [
+        'How much plasmid? Answered "50 ng.", which the draft does not use',
+        "Which strain batch?",
+    ]
     assert len(state["follow_ups"]) == 2
     assert client.get(f"/api/infos/{info_id}").json() == state
 

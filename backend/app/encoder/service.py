@@ -55,6 +55,9 @@ def _unused_answers(draft: RecordDraft, follow_ups: list[FollowUp]) -> list[str]
     The model can keep the record's value and drop an answer that says otherwise ("3 years"
     in the record, "5 years" in the answer). Code cannot tell which value is right, so the
     contributor sees both on the review screen. Answers without numbers are not checked.
+
+    The gap is published if left empty, and becomes the change "{gap}: {answer}" if filled in
+    (frontend draft.ts), so it reads as a fact and has no final period.
     """
     used = set(NUMBER.findall(draft.model_dump_json()))
     gaps = []
@@ -63,8 +66,7 @@ def _unused_answers(draft: RecordDraft, follow_ups: list[FollowUp]) -> list[str]
         if answer == SKIPPED or set(NUMBER.findall(answer)) <= used:
             continue
         gaps.append(
-            f'The answer "{answer}" (to "{follow_up.question}") is not in the draft;'
-            " check it against the record."
+            f'{follow_up.question.strip()} Answered "{answer}", which the draft does not use'
         )
     return gaps
 

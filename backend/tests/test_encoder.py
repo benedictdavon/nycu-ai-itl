@@ -115,8 +115,7 @@ def test_an_answer_the_draft_drops_becomes_a_gap() -> None:
     draft = encode(UPLOAD, asked).draft
     assert draft is not None
     assert draft.gaps == [
-        'The answer "5 years" (to "How long did it take to grow?") is not in the draft;'
-        " check it against the record."
+        'How long did it take to grow? Answered "5 years", which the draft does not use'
     ]
 
 

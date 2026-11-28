@@ -132,7 +132,7 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Led by:** 李原誌
 
 ## 2026-11-25 — Part B: an answer the draft does not use becomes a gap (#39)
-**What:** After the model drafts, `_with_rules` in `encoder/service.py` checks each follow-up answer. If the answer has a number that is nowhere in the draft, a gap is added: `The answer "5 years" (to "How long …?") is not in the draft; check it against the record.` Skipped answers ("I don't know") and answers without numbers are not checked. The prompt suite has a new case, `enc-answer-conflict`, and an `answers_used` check.
+**What:** After the model drafts, `_with_rules` in `encoder/service.py` checks each follow-up answer. If the answer has a number that is nowhere in the draft, a gap is added: `How long …? Answered "5 years", which the draft does not use`. The wording reads right in all three places a gap appears: the review screen, the published record if left empty, and the change `"{gap}: {answer}"` if filled in (Benedict, #44 review) Skipped answers ("I don't know") and answers without numbers are not checked. The prompt suite has a new case, `enc-answer-conflict`, and an `answers_used` check.
 **Why:** Benedict found (#39) that when an answer contradicts the record (record: 3 years, answer: 5 years), the model keeps the record's value and the answer disappears, while the review screen says every number checked out. CLAUDE.md puts guards in code. Code cannot tell which value is right, so it shows the conflict and the contributor decides.
 **Alternative rejected:** A prompt rule only (cycle 3 showed that each new rule made another case worse); replacing the record's value with the answer's (the answer can be the wrong one, and code cannot tell which number in the draft it corrects); checking answers without numbers (word overlap would flag many answers the draft did use).
 **Led by:** 李原誌
@@ -142,3 +142,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** On a short record with no SOP the model listed the record's facts as changes, with reasons like "Record states this" (#40). The sentence fixed it in every run that showed it, and no other case got worse (`docs/cp2/prompt_suite/fail_then_fix_encoder.md`, cycle 4).
 **Alternative rejected:** An example in the question rules against asking what the record says (fewer needless questions, but `enc-no-reason` guessed a reason again); a code check for needless questions (code cannot tell reliably whether a question is answered by the record); a `results` field in the draft (the real fix for results that go missing, but it changes `models.py`, which needs every part owner's review: proposed, not done here).
 **Led by:** 李原誌
+
+## 2026-11-28 — Code steward: 李原誌, until CP2 submission
+**What:** 李原誌 is the code steward from Sat Nov 28 until the CP2 submission on Sun Nov 29, including merge day. He reviews the open PRs, merges the approved ones, and writes the merge-day plan. When he is the author (for example #44), another member approves and he merges (charter §2).
+**Why:** No steward was recorded after Benedict's turn on Nov 22, and the PRs before CP2 need one person who merges them. CP2 asks each member for two approvals as code steward, each with a real comment, and 李原誌 has not reviewed a CP2 PR yet.
+**Alternative rejected:** Going on without a steward, with authors merging their own PRs as #36–#43 were; repeating the Nov 20–22 rotation (with one day left, not enough for three turns).
+**Led by:** Benedict Davon Martono
