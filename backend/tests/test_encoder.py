@@ -120,13 +120,25 @@ def test_an_answer_the_draft_drops_becomes_a_gap() -> None:
 
 
 def test_used_skipped_and_wordy_answers_add_no_gap() -> None:
-    _fake().queue(_reply(gaps=["Lysis took 5 min, not 3?"]))
+    _fake().queue(_reply(procedure="Miniprep with a 5 min lysis"))
     asked = [
-        FollowUp(question="How long was the lysis?", answer="5 min"),  # in gaps: used
+        FollowUp(question="How long was the lysis?", answer="5 min"),  # in the draft: used
         FollowUp(question="Which kit?", answer="I don't know"),  # skipped
     ]
     draft = encode(UPLOAD, asked).draft
-    assert draft is not None and draft.gaps == ["Lysis took 5 min, not 3?"]
+    assert draft is not None and draft.gaps == []
     _fake().queue(_reply())
     draft = encode(UPLOAD, [FollowUp(question="Which kit?", answer="The usual one")]).draft
     assert draft is not None and draft.gaps == []  # no number: not checked
+
+
+def test_a_number_only_in_a_gap_is_not_used() -> None:
+    """Run 2026-11-29-0023: the model's next question had the answer's number, not the draft."""
+    _fake().queue(_reply(gaps=["What was the result of the 5-year growth?"]))
+    asked = [FollowUp(question="How long did it take to grow?", answer="5 years")]
+    draft = encode(UPLOAD, asked).draft
+    assert draft is not None
+    assert draft.gaps == [
+        "What was the result of the 5-year growth?",
+        'How long did it take to grow? Answered "5 years", which the draft does not use',
+    ]

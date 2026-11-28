@@ -59,7 +59,9 @@ def _unused_answers(draft: RecordDraft, follow_ups: list[FollowUp]) -> list[str]
     The gap is published if left empty, and becomes the change "{gap}: {answer}" if filled in
     (frontend draft.ts), so it reads as a fact and has no final period.
     """
-    used = set(NUMBER.findall(draft.model_dump_json()))
+    # Not the gaps: a gap is a question, and "What was the result of the 5-year growth?" does
+    # not use the answer "5 years" (prompt suite run 2026-11-29-0023).
+    used = set(NUMBER.findall(draft.model_dump_json(exclude={"gaps"})))
     gaps = []
     for follow_up in follow_ups:
         answer = (follow_up.answer or "").strip()
