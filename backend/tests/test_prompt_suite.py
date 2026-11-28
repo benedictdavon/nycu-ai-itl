@@ -106,6 +106,26 @@ def test_each_draft_check_catches_its_failure() -> None:
     assert len(failed) == 11
 
 
+def test_answers_used_needs_each_answer_number_in_the_draft() -> None:
+    expect = {"answers_used": True}
+    kept = GOOD_DRAFT.model_copy(update={"gaps": ["The answer says 5 years."]})
+    assert run.check_draft(expect, kept, 1, SOURCE, 1.0, ["5 years"]) == []
+    lost = GOOD_DRAFT.model_copy(update={"gaps": []})
+    failed = run.check_draft(expect, lost, 1, SOURCE, 1.0, ["5 years"])
+    assert failed == ["numbers from the answers not in the draft: ['5']"]
+
+
+def test_no_changes_fails_on_any_change() -> None:
+    assert (
+        run.check_draft(
+            {"no_changes": True}, GOOD_DRAFT.model_copy(update={"changes": []}), 0, SOURCE, 1.0
+        )
+        == []
+    )
+    failed = run.check_draft({"no_changes": True}, GOOD_DRAFT, 0, SOURCE, 1.0)
+    assert failed == ["changes are ['Wash volume doubled', 'Plasmid amount: 50 ng'], expected none"]
+
+
 def test_the_encoder_runner_answers_then_skips(monkeypatch: pytest.MonkeyPatch) -> None:
     """The runner answers with the case's answers, then "I don't know", until it gets a draft."""
     seen: list[list[str | None]] = []

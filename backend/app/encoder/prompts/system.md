@@ -5,7 +5,7 @@ Fill in the draft:
 - `based_on`: the protocol, SOP or kit manual the work followed, as the record names it. If the record says "following X", "per X" or "based on X", `based_on` is X. Null only if the record names none.
 - `contributors`: the people who did the work. The uploader is always one of them.
 - `project_tags`: project names the record mentions. Empty if none.
-- `changes`: each thing done differently from the base protocol, one per item. `what` says the change as written. `reason` says why, only if the record or an answer gives the reason in words (for example "because the cells clumped"). Never guess a purpose such as "to improve efficiency" or "to increase yield". If no reason is written, `reason` is null. A step the contributor says was unchanged may be listed as unchanged.
+- `changes`: each thing done differently from the base protocol, one per item. `what` says the change as written. `reason` says why, only if the record or an answer gives the reason in words (for example "because the cells clumped"). Never guess a purpose such as "to improve efficiency" or "to increase yield". If no reason is written, `reason` is null. A step the contributor says was unchanged may be listed as unchanged. A result or observation (a count, a size, a mass, how long something took) is not a change. If the record names no base protocol and says nothing was done differently, `changes` is empty.
 - `troubleshooting`: what went wrong and what fixed it, or null if nothing went wrong.
 - `gaps`: what a labmate would need to repeat the work but the record does not say, each as one short sentence. Empty if nothing is missing.
 

@@ -56,9 +56,11 @@ ENCODER_EXPECT = {
     "has_gaps",
     "must_not_include",
     "no_invented_numbers",
+    "answers_used",
+    "no_changes",
 }
-SKIPPED = "I don't know"  # what the Follow-up screen sends for "Skip"
-NUMBER = re.compile(r"\d+(?:\.\d+)?")
+SKIPPED = encoder.SKIPPED
+NUMBER = encoder.NUMBER
 
 
 @dataclass
@@ -144,9 +146,15 @@ def load_info(case: dict[str, Any]) -> Info:
 
 
 def check_draft(
-    expect: dict[str, Any], draft: RecordDraft, asked: int, source: str, seconds: float
+    expect: dict[str, Any],
+    draft: RecordDraft,
+    asked: int,
+    source: str,
+    seconds: float,
+    answers: list[str] | None = None,
 ) -> list[str]:
-    """The checks an encoder case fails; empty if it passes. `source` is the record and answers."""
+    """The checks an encoder case fails; empty if it passes. `source` is the record and answers;
+    `answers` are the answers given (not skipped)."""
     failed = []
     whole = draft.model_dump_json().lower()
     reasons = " ".join(change.reason or "" for change in draft.changes).lower()
@@ -174,6 +182,8 @@ def check_draft(
         and bool(draft.troubleshooting) != expect["has_troubleshooting"]
     ):
         failed.append(f"troubleshooting is {draft.troubleshooting!r}")
+    if expect.get("no_changes") and draft.changes:
+        failed.append(f"changes are {[change.what for change in draft.changes]}, expected none")
     if "has_gaps" in expect and bool(draft.gaps) != expect["has_gaps"]:
         failed.append(f"gaps are {draft.gaps}")
     for phrase in expect.get("must_not_include", []):
@@ -183,6 +193,10 @@ def check_draft(
         invented = sorted(set(NUMBER.findall(whole)) - set(NUMBER.findall(source)))
         if invented:
             failed.append(f"numbers not in the record or answers: {invented}")
+    if expect.get("answers_used"):
+        lost = sorted(set(NUMBER.findall(" ".join(answers or []))) - set(NUMBER.findall(whole)))
+        if lost:
+            failed.append(f"numbers from the answers not in the draft: {lost}")
     if seconds > MAX_SECONDS:
         failed.append(f"slowest call took {seconds:.1f} s (limit {MAX_SECONDS} s)")
     return failed
@@ -214,7 +228,8 @@ def run_encoder(case: dict[str, Any]) -> Result:
         "  ```",
     ]
     source = " ".join([info.text, *(f.answer or "" for f in follow_ups)])
-    failed = check_draft(case["expect"], draft, len(follow_ups), source, slowest)
+    given = [f.answer or "" for f in follow_ups if f.answer != SKIPPED]
+    failed = check_draft(case["expect"], draft, len(follow_ups), source, slowest, given)
     return Result(case=case, seconds=slowest, failed=failed, output="\n".join(lines))
 
 
