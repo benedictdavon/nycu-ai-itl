@@ -136,3 +136,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Benedict found (#39) that when an answer contradicts the record (record: 3 years, answer: 5 years), the model keeps the record's value and the answer disappears, while the review screen says every number checked out. CLAUDE.md puts guards in code. Code cannot tell which value is right, so it shows the conflict and the contributor decides.
 **Alternative rejected:** A prompt rule only (cycle 3 showed that each new rule made another case worse); replacing the record's value with the answer's (the answer can be the wrong one, and code cannot tell which number in the draft it corrects); checking answers without numbers (word overlap would flag many answers the draft did use).
 **Led by:** 李原誌
+
+## 2026-11-28 — Code steward: 李原誌, until CP2 submission
+**What:** 李原誌 is the code steward from Sat Nov 28 until the CP2 submission on Sun Nov 29, including merge day. He reviews the open PRs, merges the approved ones, and writes the merge-day plan. When he is the author (for example #44), another member approves and he merges (charter §2).
+**Why:** No steward was recorded after Benedict's turn on Nov 22, and the PRs before CP2 need one person who merges them. CP2 asks each member for two approvals as code steward, each with a real comment, and 李原誌 has not reviewed a CP2 PR yet.
+**Alternative rejected:** Going on without a steward, with authors merging their own PRs as #36–#43 were; repeating the Nov 20–22 rotation (with one day left, not enough for three turns).
+**Led by:** Benedict Davon Martono
