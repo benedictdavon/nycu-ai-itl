@@ -148,3 +148,13 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** No steward was recorded after Benedict's turn on Nov 22, and the PRs before CP2 need one person who merges them. CP2 asks each member for two approvals as code steward, each with a real comment, and 李原誌 has not reviewed a CP2 PR yet.
 **Alternative rejected:** Going on without a steward, with authors merging their own PRs as #36–#43 were; repeating the Nov 20–22 rotation (with one day left, not enough for three turns).
 **Led by:** Benedict Davon Martono
+
+## 2026-11-29 — Merge plan for the CP2 submission
+**What:** The steward (李原誌) merges the last PRs before CP2 in this order. Each PR is brought up to date with `main` (merge `main` into the branch) and passes `ruff` and `pytest` before it is merged; someone other than the author approves (charter §2).
+1. #44 (Part B, unused answers become gaps, fixes #39).
+2. The #40 PR (Part B, results are not changes). It is built on #44, so it is updated with `main` right after #44 is merged.
+3. Any other PR approved before the cut-off, smallest first.
+**Cut-off:** 21:00 on Sun Nov 29. Nothing is merged after it; the last commit on `main` is tagged `cp2`, and that tag is the repository link in the submission.
+**Why:** The two Part B PRs touch the same files (`encoder/service.py`, the encoder cases, the prompt card), so merging them in order keeps the conflicts to one. A cut-off and a tag mean the submitted repository matches what we checked, even if someone pushes later.
+**Alternative rejected:** Merging the #40 branch alone, without #44 (it contains #44's commits, so #44 would be merged without its own review); no cut-off (a late merge could break `main` after the last test run).
+**Led by:** 李原誌

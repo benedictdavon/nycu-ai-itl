@@ -328,3 +328,9 @@ Brief to the reviewing agents (abridged): judge the decoder's answers strictly f
 - **Who:** Claude Opus 5.5 (Claude Code) reproduced #40 on the team's model server, tried the prompt changes, ran the suite and wrote the prompt change, cases, check, test and docs directly (no subagent). The human (李原誌, runnywolf) asked to fix #40 next and reviews and tests it before the PR.
 - **Prompt** (translated from Chinese): after Claude proposed to start #40, the human replied "ok".
 - **Choices Claude made, for the human to check:** kept only the `changes` sentence; backed out the question example because `enc-no-reason` failed again; did not add a `results` field, because that changes `models.py`. The judged lines of run 2026-11-25-1533 are left for the human to mark.
+
+## Part B: #44 review fixes, the guard bug, and the CP2 merge plan (2026-11-28 to 2026-11-29)
+
+- **Who:** Claude Opus 5.5 (Claude Code) made the changes Benedict asked for in the #44 review, ran the encoder suite on both branches, found and fixed the guard bug (fail-then-fix cycle 5), and drafted the merge plan. The human (李原誌, runnywolf) chose to handle #44 first, chose to put the merge plan in the #40 PR, marked the judged lines through Claude (verdicts given by him or matching his earlier verdicts on the same output), and reviews and tests everything before the PR.
+- **Prompts** (translated from Chinese): "Handle 44 first"; "Merge-day plan"; "OK" (to adding it to the #40 branch).
+- **Choices Claude made, for the human to check:** the gap wording without a final period; leaving `gaps` out of the guard's numbers; a 21:00 cut-off and a `cp2` tag in the merge plan.
