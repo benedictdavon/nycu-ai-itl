@@ -130,3 +130,9 @@ Files several parts touch: `db.py` (B adds `follow_ups` and the file path, C add
 **Why:** Architecture §6 asks for at least 5 encoder cases, typical and edge, run on the real model. In the first run the model listed the requester of a discussion as a contributor. A prompt rule did not stop it and made another case fail, so the rule is in code (`docs/cp2/prompt_suite/fail_then_fix_encoder.md`, cycle 2). The latest run passes 4 of 6 automatic checks; the two failures are needless questions on complete records. Of the three properties judged by hand, one fails: the draft for record 04 leaves out the efficiency result. All three are kept as known limits.
 **Alternative rejected:** Changing the expected results so every case passes (the suite should show what the model still gets wrong); further prompt rules against needless questions (each one tried made the model guess reasons again).
 **Led by:** 李原誌
+
+## 2026-11-28 — Code steward: 李原誌, until CP2 submission
+**What:** 李原誌 is the code steward from Sat Nov 28 until the CP2 submission on Sun Nov 29, including merge day. He reviews the open PRs, merges the approved ones, and writes the merge-day plan. When he is the author (for example #44), another member approves and he merges (charter §2).
+**Why:** No steward was recorded after Benedict's turn on Nov 22, and the PRs before CP2 need one person who merges them. CP2 asks each member for two approvals as code steward, each with a real comment, and 李原誌 has not reviewed a CP2 PR yet.
+**Alternative rejected:** Going on without a steward, with authors merging their own PRs as #36–#43 were; repeating the Nov 20–22 rotation (with one day left, not enough for three turns).
+**Led by:** Benedict Davon Martono
