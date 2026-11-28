@@ -135,8 +135,8 @@ The model returns one `ModelReply`: a `draft` (`RecordDraft` in `models.py`) and
   - [`tests/test_encoder.py`](../../backend/tests/test_encoder.py) covers the question limit, discussions, repeated questions and gaps, unused answers, contributors and tags.
   - [`tests/test_api_flow.py`](../../backend/tests/test_api_flow.py) covers questions then a draft, a model failure, double answers and the text limit.
 - **The prompt suite against the real model:**
-  - 7 encoder cases in [`prompt_suite/cases/encoder.json`](../../backend/prompt_suite/cases/encoder.json): a complete record, a record full of values, a change with no written reason, an unclear record that must be asked about, every question skipped, a discussion, and an answer that contradicts the record (`enc-answer-conflict`, #39, not yet run on the real model).
-  - Latest run: 4 of 6 pass the automatic checks, and 2 of the 3 judged properties pass ([results/2026-11-22-2105.md](prompt_suite/results/2026-11-22-2105.md)). `enc-no-reason` passes its checks but fails its judged property (see below).
+  - 7 encoder cases in [`prompt_suite/cases/encoder.json`](../../backend/prompt_suite/cases/encoder.json): a complete record, a record full of values, a change with no written reason, an unclear record that must be asked about, every question skipped, a discussion, and an answer that contradicts the record (`enc-answer-conflict`, #39).
+  - Latest run: 5 of 7 pass the automatic checks, the same two failures as before #39; 2 of the 4 judged properties pass ([results/2026-11-28-2355.md](prompt_suite/results/2026-11-28-2355.md)). `enc-no-reason` and `enc-answer-conflict` pass their checks but fail their judged property: the draft leaves out a result (see below).
 - **Fail-then-fix** ([`fail_then_fix_encoder.md`](prompt_suite/fail_then_fix_encoder.md)):
   1. Repeated questions and guessed reasons, fixed in code and in the prompt.
   2. The requester listed as a contributor, fixed in code.

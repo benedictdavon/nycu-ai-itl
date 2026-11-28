@@ -87,7 +87,7 @@
   },
   {
     "id": "enc-answer-conflict",
-    "about": "An answer that contradicts the record (#39): the answer's value is not lost",
+    "about": "An answer that contradicts the record (#39): the answer's value is not lost. answers_used checks the code guard, not the model: _with_rules always keeps the answer as a gap, so this case cannot fail through encode(). The runner gives '5 years' to the first question, whatever it asks; read the question before judging",
     "info": {
       "kind": "upload",
       "contributor": "Bea Lin",
